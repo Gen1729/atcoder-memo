@@ -5,9 +5,9 @@ import {
   SignUpButton,
   SignedIn,
   SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { CustomUserButton } from './components/CustomUserButton'
 import './globals.css'
 
 const geistSans = Geist({
@@ -44,7 +44,7 @@ export default function RootLayout({
               </SignUpButton>
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              <CustomUserButton />
             </SignedIn>
           </header>
           {children}
