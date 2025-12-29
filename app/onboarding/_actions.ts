@@ -12,11 +12,18 @@ export const completeOnboarding = async (formData: FormData) => {
   const client = await clerkClient()
 
   try {
+    const atcoderRate = formData.get('atcoderRate')
+    const atcoderUsername = formData.get('atcoderUsername')
+    const favoriteLanguage = formData.get('favoriteLanguage')
+    
     const res = await client.users.updateUser(userId, {
       publicMetadata: {
         onboardingComplete: true,
-        applicationName: formData.get('applicationName'),
-        applicationType: formData.get('applicationType'),
+      },
+      unsafeMetadata: {
+        atcoderUsername: atcoderUsername ? String(atcoderUsername) : undefined,
+        favoriteLanguage: favoriteLanguage ? String(favoriteLanguage) : undefined,
+        atcoderRate: atcoderRate ? Number(atcoderRate) : undefined,
       },
     })
     return { message: res.publicMetadata }

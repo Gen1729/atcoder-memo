@@ -135,6 +135,7 @@ export function AtCoderSettings() {
             onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
           >
             <option value="">Select a language</option>
+            <option value="None">None</option>
             <option value="Python">Python</option>
             <option value="C++">C++</option>
             <option value="Java">Java</option>
