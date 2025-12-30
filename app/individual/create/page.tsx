@@ -98,7 +98,7 @@ export default function Create(){
               {/* Subtitle and URL - Side by Side */}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label htmlFor="subtitle" className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label htmlFor="subtitle" className="block text-base font-semibold text-gray-700 mb-1">
                     Summary
                   </label>
                   <input 
@@ -108,12 +108,12 @@ export default function Create(){
                     placeholder="Supplementary Information (Option)"
                     onChange={(e) => setSubtitle(e.target.value)} 
                     value={subtitle}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="url" className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label htmlFor="url" className="block text-base font-semibold text-gray-700 mb-1">
                     URL
                   </label>
                   <input 
@@ -123,14 +123,14 @@ export default function Create(){
                     placeholder="https://example.com (Option)"
                     onChange={(e) => setUrl(e.target.value)} 
                     value={url}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Content - Flexible height */}
               <div className="flex-1 flex flex-col min-h-0 mb-3">
-                <label htmlFor="content" className="block text-sm font-semibold text-gray-700 mb-1">
+                <label htmlFor="content" className="block text-base font-semibold text-gray-700 mb-1">
                   Content
                 </label>
                 <textarea 
@@ -155,14 +155,14 @@ export default function Create(){
                     checked={publish}
                     className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                   />
-                  <label htmlFor="publish" className="ml-2 text-sm font-semibold text-gray-700 cursor-pointer whitespace-nowrap">
+                  <label htmlFor="publish" className="ml-2 text-base font-semibold text-gray-700 cursor-pointer whitespace-nowrap">
                     Publish
                   </label>
                 </div>
 
                 {/* Center-Left: Tags */}
                 <div className="flex-1 max-w-md">
-                  <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label htmlFor="tags" className="block text-base font-semibold text-gray-700 mb-1">
                     tags (space delimiter)
                   </label>
                   <input 
@@ -172,13 +172,13 @@ export default function Create(){
                     placeholder="dp algorithm"
                     onChange={(e) => setTags(e.target.value)} 
                     value={tags}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
                 {/* Right: Category */}
                 <div className="w-48">
-                  <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-1">
+                  <label htmlFor="category" className="block text-base font-semibold text-gray-700 mb-1">
                     category
                   </label>
                   <select 
@@ -187,7 +187,7 @@ export default function Create(){
                     onChange={(e) => setCategory(e.target.value)} 
                     value={category}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    className="w-full px-3 py-2 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   >
                     <option value="">Please Select</option>
                     <option value="algorithm">algorithm</option>
@@ -199,15 +199,15 @@ export default function Create(){
               </div>
 
               {/* Create Button - Bottom Right */}
-              <div className="flex justify-end pt-3">
+              <div className="flex justify-end pt-4">
                 <button 
                   type="submit"
-                  className="flex items-center px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
+                  className="flex items-center px-4.5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Create New Memo
+                  Create
                 </button>
               </div>
             </form>

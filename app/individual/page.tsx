@@ -222,51 +222,11 @@ export default function Home() {
         {/* Memos Grid */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Sample Memo Cards */}
-            {[
-              { title: "動的計画法の基礎", subtitle: "DPの基本的な考え方とメモ化について", tags: "dp algorithm", category: "algorithm" },
-              { title: "二分探索の実装", subtitle: "効率的な探索アルゴリズムの実装例", tags: "binary-search algorithm", category: "algorithm" },
-              { title: "グラフ理論入門", subtitle: "DFS/BFSの違いと使い分け", tags: "graph dfs bfs", category: "algorithm" },
-              { title: "セグメント木", subtitle: "区間クエリを高速に処理するデータ構造", tags: "data-structure segment-tree", category: "dataStructure" },
-              { title: "Union-Find", subtitle: "素集合データ構造の実装", tags: "data-structure union-find", category: "dataStructure" },
-              { title: "最短経路問題", subtitle: "ダイクストラ法とベルマンフォード法", tags: "graph dijkstra", category: "math" },
-            ].filter((memo) => (category == "all" || memo.category == category)).map((memo, index) => (
-              <div
-                key={index}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-xl font-bold text-gray-900 flex-1">
-                    {memo.title}
-                  </h2>
-                  <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0 ml-2 mt-1.5`} title={memo.category} />
-                </div>
-                {memo.subtitle && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    {memo.subtitle}
-                  </p>
-                )}
-                {memo.tags && (
-                  <div className="flex flex-wrap gap-2">
-                    {memo.tags.split(' ').map((tag, tagIndex) => (
-                      <span
-                        key={tagIndex}
-                        className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Actual data from database */}
             {!loading && memos.filter((memo) => (category == "all" || memo.category == category)).map((memo) => (
               <div
                 key={memo.id}
                 className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => {router.push('/individual/display')}}
+                onClick={() => {router.push(`/individual/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
                   <h2 className="text-xl font-bold text-gray-900 flex-1">
