@@ -16,6 +16,7 @@ export const completeOnboarding = async (formData: FormData) => {
     const atcoderUsername = formData.get('atcoderUsername')
     const favoriteLanguage = formData.get('favoriteLanguage')
     
+    // Clerkのメタデータを更新
     const res = await client.users.updateUser(userId, {
       publicMetadata: {
         onboardingComplete: true,
@@ -26,8 +27,18 @@ export const completeOnboarding = async (formData: FormData) => {
         atcoderRate: atcoderRate ? Number(atcoderRate) : undefined,
       },
     })
+
+    // ユーザー情報を取得（emailを含む）
+    const user = await client.users.getUser(userId)
+    const email = user.emailAddresses[0]?.emailAddress
+
+    if(!email){
+      return { error : "User Email not found"}
+    }
+
     return { message: res.publicMetadata }
   } catch (err) {
+    console.error('Onboarding error:', err)
     return { error: 'There was an error updating the user metadata.' }
   }
 }

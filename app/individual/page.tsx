@@ -3,6 +3,14 @@ import { useEffect, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 
+interface Category {
+  all: number;
+  algorithm: number;
+  dataStructure: number;
+  math: number;
+  others: number;
+}
+
 interface Memo {
   id: number;
   title: string;
@@ -11,13 +19,28 @@ interface Memo {
   content?: string;
   publish?: boolean;
   tags?: string;
+  category: string;
 }
 
 export default function Home() {
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [category,setCategory] = useState<string>("all");
+  const [categoryNum,setCategoryNum] = useState<Category>();
   const { user } = useUser();
   const { session } = useSession();
+
+  // Category color mapping
+  const getCategoryColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      'all': 'bg-black',
+      'algorithm': 'bg-red-500',
+      'dataStructure': 'bg-blue-500',
+      'math': 'bg-green-500',
+      'others': 'bg-gray-500',
+    };
+    return colors[category] || 'bg-gray-500';
+  };
 
   // Create a custom Supabase client that injects the Clerk session token into the request headers
   function createClerkSupabaseClient() {
@@ -41,6 +64,25 @@ export default function Home() {
       setLoading(true);
       const { data, error } = await client.from('memos').select();
       if (!error) setMemos(data);
+      const categoryCount: Category = 
+      {
+        all: 0,
+        algorithm: 0,
+        dataStructure: 0,
+        math: 0,
+        others: 0
+      };
+      if(data){
+        data.forEach((c) => {
+          const cat = c.category as keyof Category;
+          if (cat in categoryCount) {
+            categoryCount[cat]++;
+          }
+        });
+        categoryCount.all = data.length;
+        setCategoryNum(categoryCount);
+      }
+      
       setLoading(false);
     }
 
@@ -116,29 +158,23 @@ export default function Home() {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              カテゴリー
+              category
             </h3>
             <div className="space-y-1">
-              <button className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-                <span>すべて</span>
-                <span className="text-xs text-gray-500">12</span>
-              </button>
-              <button className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-                <span>アルゴリズム</span>
-                <span className="text-xs text-gray-500">12</span>
-              </button>
-              <button className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-                <span>データ構造</span>
-                <span className="text-xs text-gray-500">8</span>
-              </button>
-              <button className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-                <span>数学</span>
-                <span className="text-xs text-gray-500">5</span>
-              </button>
-              <button className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-                <span>その他</span>
-                <span className="text-xs text-gray-500">5</span>
-              </button>
+
+              {categoryNum && Object.keys(categoryNum).map((key) => (
+                <button 
+                  key={key}
+                  className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  onClick={() => setCategory(key)}
+                >
+                  <div className="flex gap-3">
+                    <div className={`w-3 h-3 rounded-full ${getCategoryColor(key)} flex-shrink-0 ml-2 mt-1.5`}/>
+                    <span>{key}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{categoryNum[key as keyof Category] || 0}</span>
+                </button>
+              ))}
             </div>
           </div>
         </nav>
@@ -167,7 +203,7 @@ export default function Home() {
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">すべてのメモ</h1>
-            <p className="text-sm text-gray-500 mt-1">123件のメモ</p>
+            <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0}件のメモ</p>
           </div>
           
           <button className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm">
@@ -183,20 +219,23 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Sample Memo Cards */}
             {[
-              { title: "動的計画法の基礎", subtitle: "DPの基本的な考え方とメモ化について", tags: "dp algorithm" },
-              { title: "二分探索の実装", subtitle: "効率的な探索アルゴリズムの実装例", tags: "binary-search algorithm" },
-              { title: "グラフ理論入門", subtitle: "DFS/BFSの違いと使い分け", tags: "graph dfs bfs" },
-              { title: "セグメント木", subtitle: "区間クエリを高速に処理するデータ構造", tags: "data-structure segment-tree" },
-              { title: "Union-Find", subtitle: "素集合データ構造の実装", tags: "data-structure union-find" },
-              { title: "最短経路問題", subtitle: "ダイクストラ法とベルマンフォード法", tags: "graph dijkstra" },
-            ].map((memo, index) => (
+              { title: "動的計画法の基礎", subtitle: "DPの基本的な考え方とメモ化について", tags: "dp algorithm", category: "algorithm" },
+              { title: "二分探索の実装", subtitle: "効率的な探索アルゴリズムの実装例", tags: "binary-search algorithm", category: "algorithm" },
+              { title: "グラフ理論入門", subtitle: "DFS/BFSの違いと使い分け", tags: "graph dfs bfs", category: "algorithm" },
+              { title: "セグメント木", subtitle: "区間クエリを高速に処理するデータ構造", tags: "data-structure segment-tree", category: "dataStructure" },
+              { title: "Union-Find", subtitle: "素集合データ構造の実装", tags: "data-structure union-find", category: "dataStructure" },
+              { title: "最短経路問題", subtitle: "ダイクストラ法とベルマンフォード法", tags: "graph dijkstra", category: "math" },
+            ].filter((memo) => (category == "all" || memo.category == category)).map((memo, index) => (
               <div
                 key={index}
                 className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
               >
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
-                  {memo.title}
-                </h2>
+                <div className="flex items-start justify-between mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 flex-1">
+                    {memo.title}
+                  </h2>
+                  <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0 ml-2 mt-1.5`} title={memo.category} />
+                </div>
                 {memo.subtitle && (
                   <p className="text-sm text-gray-600 mb-4">
                     {memo.subtitle}
@@ -218,14 +257,19 @@ export default function Home() {
             ))}
 
             {/* Actual data from database */}
-            {!loading && memos.map((memo) => (
+            {!loading && memos.filter((memo) => (category == "all" || memo.category == category)).map((memo) => (
               <div
                 key={memo.id}
                 className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
               >
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
-                  {memo.title}
-                </h2>
+                <div className="flex items-start justify-between mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 flex-1">
+                    {memo.title}
+                  </h2>
+                  {memo.category && (
+                    <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0 ml-2 mt-1.5`} title={memo.category} />
+                  )}
+                </div>
                 {memo.subtitle && (
                   <p className="text-sm text-gray-600 mb-4">
                     {memo.subtitle}

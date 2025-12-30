@@ -41,6 +41,7 @@ export default function OnboardingComponent() {
               name="atcoderUsername" 
               placeholder="your_atcoder_username"
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
             />
           </div>
 
@@ -52,6 +53,7 @@ export default function OnboardingComponent() {
               id="favoriteLanguage"
               name="favoriteLanguage" 
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              required
             >
               <option value="">Select a language</option>
               <option value="None">None</option>

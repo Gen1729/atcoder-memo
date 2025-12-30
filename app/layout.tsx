@@ -34,7 +34,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-          <header className="flex justify-between items-center p-4 gap-4 h-16">
+          <header className="flex justify-between items-center p-4 gap-4 h-16 bg-green-100">
             <div className="font-bold text-lg">Atcoder memo</div>
             <div className="flex items-center gap-4">
               <SignedOut>
