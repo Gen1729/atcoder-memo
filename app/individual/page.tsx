@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation';
 
 interface Category {
   all: number;
@@ -23,6 +24,7 @@ interface Memo {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [category,setCategory] = useState<string>("all");
@@ -206,7 +208,10 @@ export default function Home() {
             <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0}件のメモ</p>
           </div>
           
-          <button className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm">
+          <button 
+            className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
+            onClick={() => {router.push('/individual/create')}}
+          >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
