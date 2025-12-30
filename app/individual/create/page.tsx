@@ -62,7 +62,20 @@ export default function Create(){
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <div className="w-full max-w-4xl h-full p-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">New Memo</h1>
+            <div className="flex items-center justify-between mb-4">
+              <button
+                type="button"
+                onClick={() => router.push('/individual')}
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">New Memo</h1>
+              <div className="w-16"></div> {/* Spacer for centering */}
+            </div>
             
             <form onSubmit={createMemo} className="flex-1 flex flex-col min-h-0">
               {/* Title */}

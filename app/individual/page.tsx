@@ -266,6 +266,7 @@ export default function Home() {
               <div
                 key={memo.id}
                 className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => {router.push('/individual/display')}}
               >
                 <div className="flex items-start justify-between mb-2">
                   <h2 className="text-xl font-bold text-gray-900 flex-1">
