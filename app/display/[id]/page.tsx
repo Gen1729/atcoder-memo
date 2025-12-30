@@ -45,7 +45,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
   // Fetch memo data
   useEffect(() => {
-    if (!user || !session || !id) return;
+    if (!id) return;
 
     async function loadMemo() {
       setLoading(true);
@@ -53,6 +53,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         .from('memos')
         .select('*')
         .eq('id', id)
+        .eq('publish', true)
         .single();
 
       if (error) {
@@ -65,7 +66,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
     loadMemo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, session, id]);
+  }, [id]); // Add id to dependencies
 
   // Category color mapping
   const getCategoryColor = (category: string) => {
@@ -110,7 +111,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             {/* Header with back button and title */}
             <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => router.push('/individual')}
+                onClick={() => router.push('/')}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

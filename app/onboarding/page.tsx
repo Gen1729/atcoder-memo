@@ -15,7 +15,7 @@ export default function OnboardingComponent() {
     if (res?.message) {
       // Forces a token refresh and refreshes the `User` object
       await user?.reload()
-      router.push('/')
+      router.push('/individual')
     }
     if (res?.error) {
       setError(res?.error)
