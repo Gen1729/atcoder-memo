@@ -20,7 +20,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string>('');
   const router = useRouter();
-  const { user } = useUser();
   const { session } = useSession();
 
   // Unwrap params
@@ -41,14 +40,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     )
   }
 
-  const client = createClerkSupabaseClient();
-
   // Fetch memo data
   useEffect(() => {
     if (!id) return;
 
     async function loadMemo() {
       setLoading(true);
+      const client = createClerkSupabaseClient();
       const { data, error } = await client
         .from('memos')
         .select('*')
