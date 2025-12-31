@@ -128,6 +128,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               <div>
                 <label className="container">
                   <input 
+                    readOnly
                     type="checkbox" 
                     id="favorite"
                     name="favorite"
