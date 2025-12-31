@@ -65,8 +65,16 @@ export default function Home() {
     async function loadMemos() {
       setLoading(true);
       const client = createClerkSupabaseClient();
-      const { data, error } = await client.from('memos').select();
-      if (!error) setMemos(data);
+      const { data, error } = await client
+        .from('memos')
+        .select();
+      
+      if (error) {
+        console.error('Error loading memo:', error);
+      } else {
+        setMemos(data);
+      }
+
       const categoryCount: Category = 
       {
         all: 0,
@@ -75,6 +83,7 @@ export default function Home() {
         math: 0,
         others: 0
       };
+
       if(data){
         data.forEach((c) => {
           const cat = c.category as keyof Category;
@@ -83,9 +92,9 @@ export default function Home() {
           }
         });
         categoryCount.all = data.length;
-        setCategoryNum(categoryCount);
       }
-      
+
+      setCategoryNum(categoryCount);
       setLoading(false);
     }
 

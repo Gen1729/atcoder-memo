@@ -1,11 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import '../../components/star.css'
+import '../../../components/star.css'
 
-export default function Create(){
+export default function Edit({ params }: { params: Promise<{ id: string }> }){
+  const [id, setId] = useState<string>('');
   const [loading,setLoading] = useState<boolean>(false);
   const [title,setTitle] = useState<string>("");
   const [subtitle,setSubtitle] = useState<string>("");
@@ -17,10 +18,12 @@ export default function Create(){
   const [favorite,setFavorite] = useState<boolean>(false);
 
   const router = useRouter();
-  const { user } = useUser()
-  // The `useSession()` hook is used to get the Clerk session object
-  // The session object is used to get the Clerk session token
-  const { session } = useSession()
+  const { user } = useUser();
+  const { session } = useSession();
+
+  useEffect(() => {
+    params.then((p) => setId(p.id));
+  }, [params]);
 
   // Create a custom Supabase client that injects the Clerk session token into the request headers
   function createClerkSupabaseClient() {
@@ -38,21 +41,55 @@ export default function Create(){
   // Create a `client` object for accessing Supabase data using the Clerk token
   const client = createClerkSupabaseClient()
 
-  async function createMemo(e: React.FormEvent<HTMLFormElement>) {
+  // Fetch memo data
+  useEffect(() => {
+    if (!user || !session || !id) return;
+
+    async function loadMemo() {
+      setLoading(true);
+      const { data, error } = await client
+        .from('memos')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error('Error loading memo:', error);
+      } else {
+        setTitle(data.title);
+        setSubtitle(data.subtitle);
+        setUrl(data.url);
+        setContent(data.content);
+        setPublish(data.publish);
+        setTags(data.tags);
+        setCategory(data.category);
+        setFavorite(data.favorite);
+      }
+      setLoading(false);
+    }
+
+    loadMemo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, session, id]);
+
+  async function editMemo(e: React.FormEvent<HTMLFormElement>) {
     setLoading(true);
 
     e.preventDefault();
     // Insert memo into the database
-    const { error } = await client.from('memos').insert({
-      title,
-      subtitle,
-      url,
-      content,
-      publish,
-      tags,
-      category,
-      favorite,
-    })
+    const { error } = await client
+      .from('memos')
+      .update({
+        title,
+        subtitle,
+        url,
+        content,
+        publish,
+        tags,
+        category,
+        favorite,
+      })
+      .eq('id', id);
 
     setLoading(false);
     
@@ -62,7 +99,7 @@ export default function Create(){
       return;
     }
     
-    router.push('/individual');
+    router.push(`/individual/display/${id}`);
   }
 
   if (loading) {
@@ -89,7 +126,7 @@ export default function Create(){
                 </svg>
                 Back
               </button>
-              <h1 className="text-2xl font-bold text-gray-900 flex-1 text-center">New Memo</h1>
+              <h1 className="text-2xl font-bold text-gray-900 flex-1 text-center">Edit Memo</h1>
               <div>
                 <label className="container">
                   <input 
@@ -104,7 +141,7 @@ export default function Create(){
               </div>
             </div>
             
-            <form onSubmit={createMemo} className="flex-1 flex flex-col min-h-0">
+            <form onSubmit={editMemo} className="flex-1 flex flex-col min-h-0">
               {/* Title */}
               <div className="mb-3">
                 <label htmlFor="title" className="block text-base font-bold text-gray-900 mb-1">
@@ -229,12 +266,12 @@ export default function Create(){
               <div className="flex justify-end pt-4">
                 <button 
                   type="submit"
-                  className="flex items-center px-4.5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
+                  className="flex items-center px-4.5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors shadow-sm"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                  Create
+                  Edit
                 </button>
               </div>
             </form>

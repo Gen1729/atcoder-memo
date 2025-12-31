@@ -53,17 +53,27 @@ export default function Home() {
       );
       
       // Fetch only public memos
-      const { data, error } = await client.from('memos').select().eq('publish', true);
-      if (!error && data) {
+      const { data, error } = await client
+        .from('memos')
+        .select()
+        .eq('publish', true);
+      
+      if (error) {
+        console.error('Error loading memo:', error);
+      }else{
         setMemos(data);
-        const categoryCount: Category = 
-        {
-          all: 0,
-          algorithm: 0,
-          dataStructure: 0,
-          math: 0,
-          others: 0
-        };
+      }
+        
+      const categoryCount: Category = 
+      {
+        all: 0,
+        algorithm: 0,
+        dataStructure: 0,
+        math: 0,
+        others: 0
+      };
+
+      if(data){
         data.forEach((c) => {
           const cat = c.category as keyof Category;
           if (cat in categoryCount) {
@@ -71,9 +81,9 @@ export default function Home() {
           }
         });
         categoryCount.all = data.length;
-        setCategoryNum(categoryCount);
       }
-      
+
+      setCategoryNum(categoryCount);
       setLoading(false);
     }
 
