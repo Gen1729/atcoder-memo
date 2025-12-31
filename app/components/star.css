@@ -1,0 +1,37 @@
+/* From Uiverse.io by andrew-demchenk0 */ 
+.container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.container {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.container svg {
+  position: relative;
+  top: 0;
+  left: 0;
+  height: 40px;
+  width: 40px;
+  transition: all 0.1s;
+  fill: #afafaf;
+  stroke: #666666;
+  stroke-width: 0.5;
+}
+
+.container svg:hover {
+  transform: scale(1.1);
+}
+
+.container input:checked ~ svg {
+  fill: #ffe100;
+  stroke: #c9a700;
+  stroke-width: 0.5;
+}
