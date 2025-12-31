@@ -13,6 +13,7 @@ interface Memo {
   publish?: boolean;
   tags?: string;
   category: string;
+  favorite: boolean;
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
