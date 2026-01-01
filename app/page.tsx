@@ -4,6 +4,9 @@ import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
 
+// 動的レンダリングを強制（useSearchParams使用のため）
+export const dynamic = 'force-dynamic';
+
 interface Category {
   all: number;
   algorithm: number;
