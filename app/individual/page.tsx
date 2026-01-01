@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useDebouncedCallback } from 'use-debounce';
 
 interface Category {
   all: number;
@@ -26,6 +27,9 @@ interface Memo {
 
 export default function Home() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [category, setCategory] = useState<string>("all");
@@ -33,6 +37,42 @@ export default function Home() {
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const { user } = useUser();
   const { session } = useSession();
+  
+  // 検索クエリをURLパラメータから取得
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
+  const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
+
+  // デバウンス処理付きURL更新関数（300ms遅延）
+  const updateSearchParams = useDebouncedCallback((search: string, tag: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    // 検索クエリが空でない場合はパラメータに追加、空なら削除
+    if (search) {
+      params.set('search', search);
+    } else {
+      params.delete('search');
+    }
+    
+    if (tag) {
+      params.set('tag', tag);
+    } else {
+      params.delete('tag');
+    }
+    
+    // URLを更新（ページリロードなし）
+    router.push(`${pathname}?${params.toString()}`);
+  }, 300);
+
+  // 検索入力時のハンドラ
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    updateSearchParams(value, tagQuery);
+  };
+
+  const handleTagChange = (value: string) => {
+    setTagQuery(value);
+    updateSearchParams(searchQuery, value);
+  };
 
   // Category color mapping
   const getCategoryColor = (category: string) => {
@@ -108,10 +148,12 @@ export default function Home() {
       <aside className="w-80 bg-white border-r border-gray-200 flex flex-col">
         {/* Search Section */}
         <div className="p-6 border-b border-gray-200">
-          <div className="relative">
+          <div className="relative mb-3">
             <input
               type="text"
-              placeholder="メモを検索..."
+              placeholder="Filter by name"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <svg
@@ -131,7 +173,9 @@ export default function Home() {
           <div className="relative">
             <input
               type="text"
-              placeholder="タグで検索..."
+              placeholder="Filter by tags"
+              value={tagQuery}
+              onChange={(e) => handleTagChange(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <svg
@@ -209,7 +253,7 @@ export default function Home() {
             Global Memo
           </button>
           
-          <button className="w-full flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+          <button className="w-full flex items-center px-4 py-2.5 text-sm font-medium text-gray-100 rounded-lg transition-colors">
             <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
@@ -241,7 +285,35 @@ export default function Home() {
         {/* Memos Grid */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {!loading && memos.filter((memo) => (!isFavorite || memo.favorite)).filter((memo) => (category == "all" || memo.category == category)).map((memo) => (
+            {!loading && memos
+              .filter((memo) => {
+                // お気に入りフィルタ
+                const favoriteMatch = !isFavorite || memo.favorite;
+                
+                // カテゴリーフィルタ
+                const categoryMatch = category === "all" || memo.category === category;
+                
+                // タイトル検索フィルタ（部分一致、大文字小文字区別なし）
+                const searchMatch = !searchQuery || 
+                  memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (memo.subtitle && memo.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
+                
+                // タグ検索フィルタ（複数タグ対応、1つでも一致すればtrue）
+                const tagMatch = !tagQuery || 
+                  (() => {
+                    if (!memo.tags) return false;
+                    
+                    // 検索タグをスペースで分割して配列にする
+                    const searchTags = tagQuery.toLowerCase().split(' ').filter(tag => tag.trim());
+                    const memoTagsLower = memo.tags.toLowerCase();
+                    
+                    // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
+                    return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
+                  })();
+                
+                return favoriteMatch && categoryMatch && searchMatch && tagMatch;
+              })
+              .map((memo) => (
               <div
                 key={memo.id}
                 className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer min-h-[146px]"
