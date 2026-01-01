@@ -1,12 +1,9 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
-
-// 動的レンダリングを強制（useSearchParams使用のため）
-export const dynamic = 'force-dynamic';
 
 interface Category {
   all: number;
@@ -28,7 +25,7 @@ interface Memo {
   favorite: boolean;
 }
 
-export default function Home() {
+function IndividualPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -44,7 +41,7 @@ export default function Home() {
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
-
+  
   // デバウンス処理付きURL更新関数（300ms遅延）
   const updateSearchParams = useDebouncedCallback((search: string, tag: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -376,5 +373,17 @@ export default function Home() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-[calc(100vh-4rem)] bg-gray-50 items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    }>
+      <IndividualPage />
+    </Suspense>
   )
 }
