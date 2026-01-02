@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AtCoder Memo
 
-## Getting Started
+A web application for managing and sharing competitive programming memos, specifically designed for AtCoder users. Create, organize, and share your problem-solving notes with the community.
 
-First, run the development server:
+## Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+AtCoder Memo is a comprehensive memo management platform that allows users to:
+- Create and manage personal memos for competitive programming problems
+- Share memos publicly with other users
+- Organize memos by categories (Algorithm, Data Structure, Math, Others)
+- Search and filter memos by title, tags, and categories
+- Mark favorite memos for quick access
+- View other users' public memos for learning and reference
+- Automatically save drafts while editing to prevent data loss
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Next.js**
+- **TypeScript**
+- **Tailwind CSS**
+- **Supabase**
+- **Clerk**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Usage
 
-## Learn More
+### Account Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. **Sign Up**: Create an account using Clerk authentication
+2. **Onboarding**: Set up your AtCoder profile:
+   - AtCoder username
+   - Favorite programming language
+   - AtCoder rating
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Creating Memos
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Navigate to **My Memo** page
+2. Click **New Memo** button
+3. Fill in the memo details:
+   - **Title** (required): Brief title for your memo
+   - **Summary**: Short description or supplementary information
+   - **URL**: Link to the problem or related resources
+   - **Content**: Detailed explanation, code snippets, or notes
+   - **Tags**: Space-separated tags for easy searching (e.g., "dp graph")
+   - **Category**: Choose from Algorithm, Data Structure, Math, or Others
+   - **Publish**: Toggle to share with the community
+   - **Favorite**: Mark as favorite for quick access
 
-## Deploy on Vercel
+4. Click **Create** to save your memo
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Editing Memos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Click on any memo in **My Memo** to view details
+2. Click **Edit** button
+3. Modify the content
+4. Click **Edit** to save changes
+
+### Browsing Global Memos
+
+1. Navigate to **Global Memo** page (home page)
+2. Browse public memos shared by other users
+3. Filter by:
+   - **Search by word**: Filter memos by title or subtitle
+   - **Search by tags**: Enter space-separated tags to find related memos
+   - **Search by creater**: Enter space-separated tags to find related memos
+   - **Category**: Select a specific category
+
+4. Click on any memo to view full details including the author's username
+
+### Managing Your Memos
+
+**My Memo Page Features:**
+- View all your personal memos
+- Filter by **All Memo** or **Favorite Memo**
+- Search by word or tags
+- Filter by category
+- Edit existing memos
+- Delete memos
+
+### AtCoder Settings
+
+Update your profile information:
+1. Click on your profile icon
+2. Select **Manage Account**
+3. Navigate to **AtCoder Settings**
+4. Update:
+   - AtCoder username
+   - Favorite programming language
+   - AtCoder rating
+5. Click **Save**
+
+## Features
+
+- ✅ User authentication with Clerk
+- ✅ User profile with AtCoder information
+- ✅ Create, read, update, delete memos
+- ✅ Public and private memo visibility
+- ✅ Category-based organization
+- ✅ Tag-based search (multi-tag OR search)
+- ✅ Favorite memo marking
