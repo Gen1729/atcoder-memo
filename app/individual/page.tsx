@@ -316,7 +316,7 @@ function IndividualPage() {
               .map((memo) => (
               <div
                 key={memo.id}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer min-h-[146px]"
+                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
                 onClick={() => {router.push(`/individual/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -334,23 +334,31 @@ function IndividualPage() {
                     )}
                   </div>
                 </div>
-                {memo.subtitle && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    {memo.subtitle}
-                  </p>
-                )}
-                {memo.tags && memo.tags.trim().length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                
+                {/* Subtitle section with min height */}
+                <div className="min-h-[24px] mb-3">
+                  {memo.subtitle && (
+                    <p className="text-sm text-gray-600">
+                      {memo.subtitle}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Tags section with min height */}
+                <div className="min-h-[24px]">
+                  {memo.tags && memo.tags.trim().length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -14,6 +14,7 @@ interface Category {
 
 interface Memo {
   id: number;
+  user_id: string;
   title: string;
   subtitle?: string;
   url?: string;
@@ -33,6 +34,7 @@ function GlobalMemosPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [category,setCategory] = useState<string>("all");
   const [categoryNum,setCategoryNum] = useState<Category>();
+  const [userNames, setUserNames] = useState<Record<string, string>>({});
   
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
@@ -101,6 +103,26 @@ function GlobalMemosPage() {
         console.error('Error loading memo:', error);
       }else{
         setMemos(data);
+        
+        // ユニークなuser_idを抽出
+        const uniqueUserIds = [...new Set(data.map(memo => memo.user_id))].filter(Boolean);
+        
+        if (uniqueUserIds.length > 0) {
+          // プロファイル情報を一括取得
+          const { data: profiles, error: profileError } = await client
+            .from('profiles')
+            .select('user_id, atcoder_username')
+            .in('user_id', uniqueUserIds);
+          
+          if (!profileError && profiles) {
+            // user_id → atcoder_usernameのマップを作成
+            const nameMap: Record<string, string> = {};
+            profiles.forEach(profile => {
+              nameMap[profile.user_id] = profile.atcoder_username || 'Unknown';
+            });
+            setUserNames(nameMap);
+          }
+        }
       }
         
       const categoryCount: Category = 
@@ -261,7 +283,7 @@ function GlobalMemosPage() {
               .map((memo) => (
               <div
                 key={memo.id}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer min-h-[146px]"
+                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
                 onClick={() => {router.push(`/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -272,21 +294,38 @@ function GlobalMemosPage() {
                     <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0 ml-2 mt-1.5`} title={memo.category} />
                   )}
                 </div>
-                {memo.subtitle && (
-                  <p className="text-sm text-gray-600 mb-4">
-                    {memo.subtitle}
-                  </p>
-                )}
-                {memo.tags && memo.tags.trim().length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                
+                {/* Subtitle section with min height */}
+                <div className="min-h-[24px] mb-3">
+                  {memo.subtitle && (
+                    <p className="text-sm text-gray-600">
+                      {memo.subtitle}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Tags section with min height */}
+                <div className="min-h-[24px] mb-3">
+                  {memo.tags && memo.tags.trim().length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                {/* ユーザー名表示 */}
+                {memo.user_id && (
+                  <div className="mt-auto pt-3 border-t border-gray-100">
+                    <p className="text-sm text-gray-500">
+                      by <span className="font-sm text-gray-700">{userNames[memo.user_id] || 'Loading...'}</span>
+                    </p>
                   </div>
                 )}
               </div>
