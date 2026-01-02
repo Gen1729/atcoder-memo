@@ -39,9 +39,10 @@ function GlobalMemosPage() {
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
+  const [nameQuery, setNameQuery] = useState<string>(searchParams.get('name') || '');
 
   // デバウンス処理付きURL更新関数（300ms遅延）
-  const updateSearchParams = useDebouncedCallback((search: string, tag: string) => {
+  const updateSearchParams = useDebouncedCallback((search: string, tag: string, name: string) => {
     const params = new URLSearchParams(searchParams.toString());
     
     // 検索クエリが空でない場合はパラメータに追加、空なら削除
@@ -56,6 +57,12 @@ function GlobalMemosPage() {
     } else {
       params.delete('tag');
     }
+
+    if (name) {
+      params.set('name', name);
+    } else {
+      params.delete('name');
+    }
     
     // URLを更新（ページリロードなし）
     router.push(`${pathname}?${params.toString()}`);
@@ -64,12 +71,17 @@ function GlobalMemosPage() {
   // 検索入力時のハンドラ
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    updateSearchParams(value, tagQuery);
+    updateSearchParams(value, tagQuery, nameQuery);
   };
 
   const handleTagChange = (value: string) => {
     setTagQuery(value);
-    updateSearchParams(searchQuery, value);
+    updateSearchParams(searchQuery, value, nameQuery);
+  };
+
+  const handleNameChange = (value: string) => {
+    setNameQuery(value);
+    updateSearchParams(searchQuery, tagQuery, value);
   };
 
   // Category color mapping
@@ -160,9 +172,31 @@ function GlobalMemosPage() {
           <div className="relative mb-3">
             <input
               type="text"
-              placeholder="Filter by name"
+              placeholder="Filter by Word"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <svg
+              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <div className="relative mb-3">
+            <input
+              type="text"
+              placeholder="Filter by Tags"
+              value={tagQuery}
+              onChange={(e) => handleTagChange(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <svg
@@ -182,9 +216,9 @@ function GlobalMemosPage() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Filter by tags"
-              value={tagQuery}
-              onChange={(e) => handleTagChange(e.target.value)}
+              placeholder="Filter by Atcoder Name"
+              value={nameQuery}
+              onChange={(e) => handleNameChange(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <svg
@@ -277,8 +311,11 @@ function GlobalMemosPage() {
                     // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
                     return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
                   })();
+
+                const nameMatch = !nameQuery || 
+                  (userNames[memo.user_id] && userNames[memo.user_id] != "Unknown" && userNames[memo.user_id].toLowerCase().includes(nameQuery.toLowerCase()));
                 
-                return categoryMatch && searchMatch && tagMatch;
+                return categoryMatch && searchMatch && tagMatch && nameMatch;
               })
               .map((memo) => (
               <div

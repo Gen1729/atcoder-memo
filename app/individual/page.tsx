@@ -151,7 +151,7 @@ function IndividualPage() {
           <div className="relative mb-3">
             <input
               type="text"
-              placeholder="Filter by name"
+              placeholder="Filter by Word"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -173,7 +173,7 @@ function IndividualPage() {
           <div className="relative">
             <input
               type="text"
-              placeholder="Filter by tags"
+              placeholder="Filter by Tags"
               value={tagQuery}
               onChange={(e) => handleTagChange(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
