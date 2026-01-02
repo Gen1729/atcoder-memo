@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 
 interface Memo {
   id: number;
+  user_id: string;
   title: string;
   subtitle?: string;
   url?: string;
@@ -20,6 +21,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
   const router = useRouter();
   const { session } = useSession();
 
@@ -59,6 +61,19 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         console.error('Error loading memo:', error);
       } else {
         setMemo(data);
+        
+        // ユーザー名を取得
+        if (data?.user_id) {
+          const { data: profile, error: profileError } = await client
+            .from('profiles')
+            .select('atcoder_username')
+            .eq('user_id', data.user_id)
+            .single();
+          
+          if (!profileError && profile) {
+            setUserName(profile.atcoder_username || 'Unknown');
+          }
+        }
       }
       setLoading(false);
     }
@@ -92,7 +107,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         <div className="text-center">
           <p className="text-gray-500 text-lg mb-4">No memo not found</p>
           <button
-            onClick={() => router.push('/individual')}
+            onClick={() => router.push('/')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Back
@@ -123,14 +138,22 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   {memo.title}
                 </h1>
               </div>
-              <div className="w-16"></div> {/* Spacer for centering */}
+              {/* User Name Display */}
+              <div className="min-w-16">
+                {memo.user_id && (
+                  <div className="text-sm text-gray-500">
+                    by <span className="font-medium text-gray-700">{userName || 'Loading...'}</span>
+                  </div>
+                )}
+              </div>
+              
             </div>
 
             {/* Subtitle and URL */}
             <div className="grid grid-cols-2 gap-3 mb-3">
               {memo.subtitle && (
                 <div>
-                  <label className="block text-base font-semibold text-gray-700 mb-1">Summary</label>
+                  <label className="block text-base font-semibold text-gray-700 mb-2">Summary</label>
                   <p className="text-base text-gray-800">
                     {memo.subtitle}
                   </p>
@@ -139,7 +162,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
               {memo.url && (
                 <div>
-                  <label className="block text-base font-semibold text-gray-700 mb-1">URL</label>
+                  <label className="block text-base font-semibold text-gray-700 mb-2">URL</label>
                   <a
                     href={memo.url}
                     target="_blank"
@@ -157,7 +180,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Content - Flexible height */}
             <div className="flex-1 flex flex-col min-h-0 mb-3">
-              <label className="block text-base font-semibold text-gray-700 mb-1">Content</label>
+              <label className="block text-base font-semibold text-gray-700 mb-3">Content</label>
               <div className="flex-1 w-full px-3 py-2 border border-gray-300 rounded-lg overflow-y-auto bg-white">
                 <pre className="whitespace-pre-wrap font-sans text-base text-gray-900">
                   {memo.content}
@@ -167,12 +190,6 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Bottom section - Tags, Category, Status */}
             <div className="flex items-end gap-15 pt-3 border-t border-gray-200 mt-3">
-              {/* Left: Publish Status */}
-              <div className="flex items-center min-w-fit">
-                <span className={`inline-flex items-center px-3 py-1.5 mb-1 rounded-full text-base font-medium ${memo.publish ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {memo.publish ? 'Publish' : 'Private'}
-                </span>
-              </div>
 
               {/* Center: Tags */}
               {memo.tags && (
@@ -181,7 +198,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1.5 mb-1 text-base font-medium bg-blue-100 text-blue-800 rounded-full"
+                        className="px-3 py-1.5 mt-0.5 mb-0.5 text-base font-medium bg-blue-100 text-blue-800 rounded-full"
                       >
                         {tag}
                       </span>

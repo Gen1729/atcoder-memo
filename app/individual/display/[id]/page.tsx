@@ -196,7 +196,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <div className="grid grid-cols-2 gap-3 mb-3">
               {memo.subtitle && (
                 <div>
-                  <label className="block text-base font-semibold text-gray-700 mb-1">Summary</label>
+                  <label className="block text-base font-semibold text-gray-700 mb-2">Summary</label>
                   <p className="text-base text-gray-800">
                     {memo.subtitle}
                   </p>
@@ -205,7 +205,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
               {memo.url && (
                 <div>
-                  <label className="block text-base font-semibold text-gray-700 mb-1">URL</label>
+                  <label className="block text-base font-semibold text-gray-700 mb-2">URL</label>
                   <a
                     href={memo.url}
                     target="_blank"
@@ -223,7 +223,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Content - Flexible height */}
             <div className="flex-1 flex flex-col min-h-0 mb-3">
-              <label className="block text-base font-semibold text-gray-700 mb-1">Content</label>
+              <label className="block text-base font-semibold text-gray-700 mb-3">Content</label>
               <div className="flex-1 w-full px-3 py-2 border border-gray-300 rounded-lg overflow-y-auto bg-white">
                 <pre className="whitespace-pre-wrap font-sans text-base text-gray-900">
                   {memo.content}
@@ -235,7 +235,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <div className="flex items-end gap-15 pt-3 border-t border-gray-200 mt-3">
               {/* Left: Publish Status */}
               <div className="flex items-center min-w-fit">
-                <span className={`inline-flex items-center px-3 py-1.5 mb-1 rounded-full text-base font-medium ${memo.publish ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                <span className={`inline-flex items-center px-3 py-1.5 mt-0.5 mb-0.5 rounded-full text-base font-medium ${memo.publish ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                   {memo.publish ? 'Publish' : 'Private'}
                 </span>
               </div>
@@ -247,7 +247,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1.5 mb-1 text-base font-medium bg-blue-100 text-blue-800 rounded-full"
+                        className="px-3 py-1.5 mt-0.5 mb-0.5 text-base font-medium bg-blue-100 text-blue-800 rounded-full"
                       >
                         {tag}
                       </span>
