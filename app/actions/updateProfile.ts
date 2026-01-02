@@ -3,11 +3,11 @@
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
 
-export const completeOnboarding = async (formData: FormData) => {
+export const updateProfile = async (formData: FormData) => {
   const { isAuthenticated, userId } = await auth()
 
   if (!isAuthenticated) {
-    return { message: 'No Logged In User' }
+    return { error: 'No Logged In User' }
   }
 
   const client = await clerkClient()
@@ -18,10 +18,7 @@ export const completeOnboarding = async (formData: FormData) => {
     const favoriteLanguage = formData.get('favoriteLanguage')
     
     // Clerkのメタデータを更新
-    const res = await client.users.updateUser(userId, {
-      publicMetadata: {
-        onboardingComplete: true,
-      },
+    await client.users.updateUser(userId, {
       unsafeMetadata: {
         atcoderUsername: atcoderUsername ? String(atcoderUsername) : undefined,
         favoriteLanguage: favoriteLanguage ? String(favoriteLanguage) : undefined,
@@ -29,15 +26,7 @@ export const completeOnboarding = async (formData: FormData) => {
       },
     })
 
-    // ユーザー情報を取得（emailを含む）
-    const user = await client.users.getUser(userId)
-    const email = user.emailAddresses[0]?.emailAddress
-
-    if(!email){
-      return { error : "User Email not found"}
-    }
-
-    // Supabaseにプロフィール情報を保存
+    // Supabaseのprofilesテーブルを更新
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -45,24 +34,21 @@ export const completeOnboarding = async (formData: FormData) => {
 
     const { error } = await supabase
       .from('profiles')
-      .upsert({
-        user_id: userId,
-        email: email,
+      .update({
         atcoder_username: atcoderUsername ? String(atcoderUsername) : null,
         favorite_language: favoriteLanguage ? String(favoriteLanguage) : null,
         atcoder_rate: atcoderRate ? Number(atcoderRate) : null,
-      }, {
-        onConflict: 'user_id'
       })
+      .eq('user_id', userId)
 
     if (error) {
       console.error('Supabase error:', error)
-      return { error: 'Failed to save profile to database' }
+      return { error: 'Failed to update profile in database' }
     }
 
-    return { message: res.publicMetadata }
+    return { success: true, message: 'Profile updated successfully' }
   } catch (err) {
-    console.error('Onboarding error:', err)
-    return { error: 'There was an error updating the user metadata.' }
+    console.error('Update profile error:', err)
+    return { error: 'There was an error updating the profile.' }
   }
 }

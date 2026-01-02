@@ -2,6 +2,7 @@
 
 import { useUser } from '@clerk/nextjs'
 import { useState, useEffect } from 'react'
+import { updateProfile } from '../actions/updateProfile'
 
 export function AtCoderSettings() {
   const { user } = useUser()
@@ -27,16 +28,23 @@ export function AtCoderSettings() {
     setMessage('')
 
     try {
-      // unsafeMetadataを使用してクライアント側から更新
-      await user?.update({
-        unsafeMetadata: {
-          ...user.unsafeMetadata,
-          atcoderUsername,
-          favoriteLanguage,
-          atcoderRate: atcoderRate ? Number(atcoderRate) : undefined
-        },
-      })
-      setMessage('✓ Saved successfully')
+      // FormDataを作成してServer Actionに送信
+      const formData = new FormData()
+      formData.append('atcoderUsername', atcoderUsername)
+      formData.append('favoriteLanguage', favoriteLanguage)
+      if (atcoderRate) {
+        formData.append('atcoderRate', atcoderRate)
+      }
+
+      const result = await updateProfile(formData)
+
+      if (result.error) {
+        setMessage('× ' + result.error)
+      } else {
+        setMessage('✓ Saved successfully')
+        // Clerkのユーザー情報を再読み込み
+        await user?.reload()
+      }
     } catch (error) {
       setMessage('× An error occurred. Please try again.')
       console.error(error)
