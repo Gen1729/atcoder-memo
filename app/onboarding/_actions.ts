@@ -30,8 +30,8 @@ export const completeOnboarding = async (formData: FormData) => {
     })
 
     // ユーザー情報を取得（emailを含む）
-    const user = await client.users.getUser(userId)
-    const email = user.emailAddresses[0]?.emailAddress
+    const user = await client.users.getUser(userId);
+    const email = user.emailAddresses[0]?.emailAddress;
 
     if(!email){
       return { error : "User Email not found"}

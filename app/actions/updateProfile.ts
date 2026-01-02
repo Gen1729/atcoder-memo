@@ -26,6 +26,13 @@ export const updateProfile = async (formData: FormData) => {
       },
     })
 
+    const user = await client.users.getUser(userId);
+    const email = user.emailAddresses[0]?.emailAddress;
+
+    if(!email){
+      return { error : "User Email not found"}
+    }
+
     // Supabaseのprofilesテーブルを更新
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,12 +41,15 @@ export const updateProfile = async (formData: FormData) => {
 
     const { error } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        user_id: userId,
+        email: email,
         atcoder_username: atcoderUsername ? String(atcoderUsername) : null,
         favorite_language: favoriteLanguage ? String(favoriteLanguage) : null,
         atcoder_rate: atcoderRate ? Number(atcoderRate) : null,
+      }, {
+        onConflict: 'user_id'
       })
-      .eq('user_id', userId)
 
     if (error) {
       console.error('Supabase error:', error)
