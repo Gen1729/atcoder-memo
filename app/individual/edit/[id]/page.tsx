@@ -128,7 +128,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
               </button>
               <h1 className="text-2xl font-bold text-gray-900 flex-1 text-center">Edit Memo</h1>
               <div>
-                <label className="container">
+                <label className="container isScale">
                   <input 
                     type="checkbox" 
                     id="favorite"

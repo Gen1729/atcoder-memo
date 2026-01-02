@@ -91,7 +91,7 @@ export default function Create(){
               </button>
               <h1 className="text-2xl font-bold text-gray-900 flex-1 text-center">New Memo</h1>
               <div>
-                <label className="container">
+                <label className="container isScale">
                   <input 
                     type="checkbox" 
                     id="favorite"
