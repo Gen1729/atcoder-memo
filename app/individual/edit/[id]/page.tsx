@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,13 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [tags,setTags] = useState<string>("");
   const [category,setCategory] = useState<string>("");
   const [favorite,setFavorite] = useState<boolean>(false);
+  
+  // 変更追跡用: DBから読み込んだ元のデータを保持
+  const [hasChanges, setHasChanges] = useState<boolean>(false);
+  // 初回ロード完了フラグ: DBデータ読み込みが完了したかを追跡
+  const [initialLoadComplete, setInitialLoadComplete] = useState<boolean>(false);
+  // 保存処理中フラグ: useRefで即座に反映（状態更新の遅延を回避）
+  const isSavingRef = useRef<boolean>(false);
 
   const router = useRouter();
   const { user } = useUser();
@@ -47,6 +54,12 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
 
     async function loadMemo() {
       setLoading(true);
+      
+      // sessionStorageから下書きを取得
+      const draftKey = `memo-draft-${id}`;
+      const savedDraft = sessionStorage.getItem(draftKey);
+      
+      // DBからメモデータを取得
       const { data, error } = await client
         .from('memos')
         .select('*')
@@ -55,27 +68,110 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
 
       if (error) {
         console.error('Error loading memo:', error);
-      } else {
-        setTitle(data.title);
-        setSubtitle(data.subtitle);
-        setUrl(data.url);
-        setContent(data.content);
-        setPublish(data.publish);
-        setTags(data.tags);
-        setCategory(data.category);
-        setFavorite(data.favorite);
+        setLoading(false);
+        return;
       }
+
+      // 下書きがある場合は復元するか確認
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        const usesDraft = window.confirm(
+          'An unsaved draft has been found. Would you like to restore the draft?'
+        );
+        
+        if (usesDraft) {
+          // 下書きを復元
+          setTitle(draft.title || '');
+          setSubtitle(draft.subtitle || '');
+          setUrl(draft.url || '');
+          setContent(draft.content || '');
+          setPublish(draft.publish || false);
+          setTags(draft.tags || '');
+          setCategory(draft.category || '');
+          setFavorite(draft.favorite || false);
+          setHasChanges(true); // 下書き復元時は変更ありとマーク
+        } else {
+          // 下書きを破棄してDBデータを使用
+          sessionStorage.removeItem(draftKey);
+          setTitle(data.title || '');
+          setSubtitle(data.subtitle || '');
+          setUrl(data.url || '');
+          setContent(data.content || '');
+          setPublish(data.publish || false);
+          setTags(data.tags || '');
+          setCategory(data.category || '');
+          setFavorite(data.favorite || false);
+        }
+      } else {
+        // 下書きがない場合はDBデータをそのまま使用
+        setTitle(data.title || '');
+        setSubtitle(data.subtitle || '');
+        setUrl(data.url || '');
+        setContent(data.content || '');
+        setPublish(data.publish || false);
+        setTags(data.tags || '');
+        setCategory(data.category || '');
+        setFavorite(data.favorite || false);
+      }
+      
+      setInitialLoadComplete(true);
       setLoading(false);
     }
 
-    loadMemo();
+    if(!hasChanges)loadMemo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, session, id]);
 
+  // sessionStorageに自動保存する機能
+  // 初回ロード完了後、フォームの値が変わるたびにsessionStorageに保存
+  useEffect(() => {
+    if (!id || !initialLoadComplete) return;
+    
+    // フォームデータをオブジェクトにまとめる
+    const formData = {
+      title,
+      subtitle,
+      url,
+      content,
+      publish,
+      tags,
+      category,
+      favorite,
+    };
+    
+    // sessionStorageに保存（メモIDをキーに使用）
+    const draftKey = `memo-draft-${id}`;
+    sessionStorage.setItem(draftKey, JSON.stringify(formData));
+    
+    // 変更があったことをマーク
+    setHasChanges(true);
+  }, [id, title, subtitle, url, content, publish, tags, category, favorite, initialLoadComplete]);
+
+  // ページ離脱時の警告
+  // 変更がある場合、ページを離れようとすると警告を表示
+  // isSavingRef.current を使うことで保存処理中は警告を出さない
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges && !isSavingRef.current) {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasChanges]);
+
   async function editMemo(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    
+    // 保存処理開始: refを使って即座にフラグを立てる
+    isSavingRef.current = true;
     setLoading(true);
 
-    e.preventDefault();
     // Insert memo into the database
     const { error } = await client
       .from('memos')
@@ -96,9 +192,18 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     if (error) {
       console.error('Error creating memo:', error);
       alert(`Error: ${error.message}`);
+      isSavingRef.current = false; // エラー時はフラグをリセット
       return;
     }
     
+    // 保存成功: sessionStorageの下書きを削除
+    const draftKey = `memo-draft-${id}`;
+    sessionStorage.removeItem(draftKey);
+    
+    // 変更フラグをリセット（警告を出さないようにする）
+    setHasChanges(false);
+    
+    // useRefを使用しているため、即座に遷移しても問題なし
     router.push(`/individual/display/${id}`);
   }
 
