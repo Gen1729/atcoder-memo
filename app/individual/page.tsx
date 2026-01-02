@@ -107,7 +107,8 @@ function IndividualPage() {
       const client = createClerkSupabaseClient();
       const { data, error } = await client
         .from('memos')
-        .select();
+        .select()
+        .eq('user_id', user!.id);
       
       if (error) {
         console.error('Error loading memo:', error);
