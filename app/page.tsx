@@ -320,7 +320,7 @@ function GlobalMemosPage() {
               .map((memo) => (
               <div
                 key={memo.id}
-                className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
+                className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
                 onClick={() => {router.push(`/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
