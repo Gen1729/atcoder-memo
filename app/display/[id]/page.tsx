@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useSession, useUser } from '@clerk/nextjs'
+import { useSession } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
@@ -15,6 +15,7 @@ interface Memo {
   tags?: string;
   category: string;
   favorite: boolean;
+  updated_at?: string;
 }
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -138,7 +139,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   {memo.title}
                 </h1>
               </div>
-              {/* User Name Display */}
+              {/* User Name and Updated Time Display */}
               <div className="min-w-16">
                 {memo.user_id && (
                   <div className="text-sm text-gray-500">
@@ -179,17 +180,31 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             </div>
 
             {/* Content - Flexible height */}
-            <div className="flex-1 flex flex-col min-h-0 mb-3">
-              <label className="block text-base font-semibold text-gray-700 mb-3">Content</label>
+            <div className="flex-1 flex flex-col min-h-0 mb-1">
+              <label className="block text-base font-semibold text-gray-700 mb-2">Content</label>
               <div className="flex-1 w-full px-3 py-2 border border-gray-300 rounded-lg overflow-y-auto bg-white">
                 <pre className="whitespace-pre-wrap font-sans text-base text-gray-900">
                   {memo.content}
                 </pre>
               </div>
+              {/* Updated at timestamp - outside content box, bottom right */}
+              {memo.updated_at && (
+                <div className="text-right">
+                  <span className="text-xs text-gray-400">
+                    Last updated: {new Date(memo.updated_at).toLocaleDateString('ja-JP', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Bottom section - Tags, Category, Status */}
-            <div className="flex items-end gap-15 pt-3 border-t border-gray-200 mt-3">
+            <div className="flex items-end gap-15 pt-3 border-t border-gray-200">
 
               {/* Center: Tags */}
               {memo.tags && (
