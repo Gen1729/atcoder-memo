@@ -51,24 +51,29 @@ export default function Create(){
     
     if (savedDraft) {
       const draft = JSON.parse(savedDraft);
-      const usesDraft = window.confirm(
-        'An unsaved draft has been found. Would you like to restore the draft?'
-      );
-      
-      if (usesDraft) {
-        // 下書きを復元
-        setTitle(draft.title || '');
-        setSubtitle(draft.subtitle || '');
-        setUrl(draft.url || '');
-        setContent(draft.content || '');
-        setPublish(draft.publish || false);
-        setTags(draft.tags || '');
-        setCategory(draft.category || '');
-        setFavorite(draft.favorite || false);
-        setHasChanges(true);
-      } else {
-        // 下書きを破棄
+      if(draft.title == '' && draft.subtitle == '' && draft.url == '' && draft.content == '' && draft.tags == ''){
         sessionStorage.removeItem(draftKey);
+        setHasChanges(false);
+      }else{
+        const usesDraft = window.confirm(
+          'An unsaved draft has been found. Would you like to restore the draft?'
+        );
+        if (usesDraft) {
+          // 下書きを復元
+          setTitle(draft.title || '');
+          setSubtitle(draft.subtitle || '');
+          setUrl(draft.url || '');
+          setContent(draft.content || '');
+          setPublish(draft.publish || false);
+          setTags(draft.tags || '');
+          setCategory(draft.category || '');
+          setFavorite(draft.favorite || false);
+          setHasChanges(true);
+        } else {
+          // 下書きを破棄
+          sessionStorage.removeItem(draftKey);
+          setHasChanges(false);
+        }
       }
     }
     
@@ -101,7 +106,10 @@ export default function Create(){
   // ページ離脱時の警告
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasChanges && !isSavingRef.current) {
+      // 何か入力されているかチェック
+      const hasContent = title || subtitle || url || content || tags;
+      
+      if (hasChanges && !isSavingRef.current && hasContent) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -112,7 +120,7 @@ export default function Create(){
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [hasChanges]);
+  }, [hasChanges, title, subtitle, url, content, tags]);
 
   async function createMemo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
