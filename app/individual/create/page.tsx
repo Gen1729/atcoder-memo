@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
@@ -15,12 +15,18 @@ export default function Create(){
   const [tags,setTags] = useState<string>("");
   const [category,setCategory] = useState<string>("");
   const [favorite,setFavorite] = useState<boolean>(false);
+  
+  // 変更追跡用
+  const [hasChanges, setHasChanges] = useState<boolean>(false);
+  // 初回ロード完了フラグ
+  const [initialLoadComplete, setInitialLoadComplete] = useState<boolean>(false);
+  // 保存処理中フラグ
+  const isSavingRef = useRef<boolean>(false);
 
   const router = useRouter();
-  const { user } = useUser()
-  // The `useSession()` hook is used to get the Clerk session object
-  // The session object is used to get the Clerk session token
-  const { session } = useSession()
+  const { user } = useUser();
+  const { session } = useSession();
+  const isAdmin = user?.publicMetadata?.role === 'admin';
 
   // Create a custom Supabase client that injects the Clerk session token into the request headers
   function createClerkSupabaseClient() {
@@ -38,10 +44,83 @@ export default function Create(){
   // Create a `client` object for accessing Supabase data using the Clerk token
   const client = createClerkSupabaseClient()
 
+  // 初回ロード時にsessionStorageから下書きを復元
+  useEffect(() => {
+    const draftKey = 'memo-draft-new';
+    const savedDraft = sessionStorage.getItem(draftKey);
+    
+    if (savedDraft) {
+      const draft = JSON.parse(savedDraft);
+      const usesDraft = window.confirm(
+        'An unsaved draft has been found. Would you like to restore the draft?'
+      );
+      
+      if (usesDraft) {
+        // 下書きを復元
+        setTitle(draft.title || '');
+        setSubtitle(draft.subtitle || '');
+        setUrl(draft.url || '');
+        setContent(draft.content || '');
+        setPublish(draft.publish || false);
+        setTags(draft.tags || '');
+        setCategory(draft.category || '');
+        setFavorite(draft.favorite || false);
+        setHasChanges(true);
+      } else {
+        // 下書きを破棄
+        sessionStorage.removeItem(draftKey);
+      }
+    }
+    
+    setInitialLoadComplete(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // sessionStorageに自動保存する機能
+  useEffect(() => {
+    if (!initialLoadComplete) return;
+    
+    const formData = {
+      title,
+      subtitle,
+      url,
+      content,
+      publish,
+      tags,
+      category,
+      favorite,
+    };
+    
+    const draftKey = 'memo-draft-new';
+    sessionStorage.setItem(draftKey, JSON.stringify(formData));
+
+    // 変更があったことをマーク
+    setHasChanges(true);
+  }, [title, subtitle, url, content, publish, tags, category, favorite, initialLoadComplete]);
+
+  // ページ離脱時の警告
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasChanges && !isSavingRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasChanges]);
+
   async function createMemo(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    
+    // 保存処理開始
+    isSavingRef.current = true;
     setLoading(true);
 
-    e.preventDefault();
     // Insert memo into the database
     const { error } = await client.from('memos').insert({
       title,
@@ -59,9 +138,18 @@ export default function Create(){
     if (error) {
       console.error('Error creating memo:', error);
       alert(`Error: ${error.message}`);
+      isSavingRef.current = false;
       return;
     }
     
+    // 保存成功: sessionStorageの下書きを削除
+    const draftKey = 'memo-draft-new';
+    sessionStorage.removeItem(draftKey);
+    
+    // 変更フラグをリセット
+    setHasChanges(false);
+    
+    // useRefを使用しているため、即座に遷移しても問題なし
     router.push('/individual');
   }
 
