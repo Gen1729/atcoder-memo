@@ -23,6 +23,7 @@ interface Memo {
   tags?: string;
   category: string;
   favorite: boolean;
+  created_at?: string;
 }
 
 function IndividualPage() {
@@ -45,9 +46,12 @@ function IndividualPage() {
   // ページネーション用のstate
   const [currentPage, setCurrentPage] = useState<number>(1);
   const ITEMS_PER_PAGE = 9; // 3x3のグリッド
+  
+  // ソート順のstate (true: 降順, false: 昇順)
+  const [isDescending, setIsDescending] = useState<boolean>(true);
 
   const filteredMemos = useMemo(() => {
-    return memos.filter((memo) => {
+    const filtered = memos.filter((memo) => {
       const favoriteMatch = !isFavorite || memo.favorite;
       
       const categoryMatch = category === "all" || memo.category === category;
@@ -71,7 +75,14 @@ function IndividualPage() {
       
       return favoriteMatch && categoryMatch && searchMatch && tagMatch;
     });
-  },[memos, searchQuery, tagQuery, category, isFavorite])
+    
+    // created_atでソート
+    return filtered.sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return isDescending ? dateB - dateA : dateA - dateB;
+    });
+  },[memos, searchQuery, tagQuery, category, isFavorite, isDescending])
 
   const totalPage = useMemo(() => {
     return Math.ceil(filteredMemos.length / ITEMS_PER_PAGE);
@@ -146,7 +157,6 @@ function IndividualPage() {
         .from('memos')
         .select()
         .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('Error loading memo:', error);
@@ -413,38 +423,62 @@ function IndividualPage() {
         {/* ページネーションコントロール - 画面下部に固定 */}
         {!loading && totalPage > 0 && (
           <div className="fixed bottom-0 left-80 right-0 bg-white border-t border-gray-200 py-4 px-8 shadow-lg">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-between">
+              {/* ソート順トグル - 左端 */}
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                onClick={() => setIsDescending(!isDescending)}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-27"
+                title={isDescending ? "Descending order（Newest）" : "Ascending order（Oldest）"}
               >
-                前へ
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isDescending ? (
+                    // 降順アイコン（下向き矢印）
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  ) : (
+                    // 昇順アイコン（上向き矢印）
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  )}
+                </svg>
+                <span>{isDescending ? "Newest" : "Oldest"}</span>
               </button>
               
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalPage }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+              {/* ページネーション - 中央 */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  前へ
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  {Array.from({ length: totalPage }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+                        currentPage === page
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPage, prev + 1))}
+                  disabled={currentPage === totalPage}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  次へ
+                </button>
               </div>
               
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPage, prev + 1))}
-                disabled={currentPage === totalPage}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                次へ
-              </button>
+              {/* 右側の空白 - レイアウトバランス用 */}
+              <div className="w-[120px]"></div>
             </div>
           </div>
         )}
