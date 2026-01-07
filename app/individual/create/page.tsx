@@ -129,14 +129,15 @@ export default function Create(){
     isSavingRef.current = true;
     setLoading(true);
 
-    // Insert memo into the database
+    const fixedTags = tags.split(' ').filter(tag => tag.trim()).join(" ");
+
     const { error } = await client.from('memos').insert({
       title,
       subtitle,
       url,
       content,
       publish,
-      tags,
+      tags : fixedTags,
       category,
       favorite,
     })

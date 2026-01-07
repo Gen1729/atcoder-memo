@@ -172,7 +172,8 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     isSavingRef.current = true;
     setLoading(true);
 
-    // Insert memo into the database
+    const fixedTags = tags.split(' ').filter(tag => tag.trim()).join(" ");
+
     const { error } = await client
       .from('memos')
       .update({
@@ -181,7 +182,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
         url,
         content,
         publish,
-        tags,
+        tags : fixedTags,
         category,
         favorite,
       })
