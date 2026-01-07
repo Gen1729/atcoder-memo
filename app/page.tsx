@@ -343,7 +343,7 @@ function GlobalMemosPage() {
                 onClick={() => {router.push(`/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-xl font-bold text-gray-900 flex-1 truncate">
+                  <h2 className="text-xl font-bold text-gray-900 flex-1 truncate" title={memo.title}>
                     {memo.title}
                   </h2>
                   {memo.category && (
@@ -354,7 +354,7 @@ function GlobalMemosPage() {
                 {/* Subtitle section with min height */}
                 <div className="min-h-[24px] mb-3">
                   {memo.subtitle && (
-                    <p className="text-sm text-gray-600 truncate">
+                    <p className="text-sm text-gray-600 truncate" title={memo.subtitle}>
                       {memo.subtitle}
                     </p>
                   )}
