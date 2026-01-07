@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useDebouncedCallback } from 'use-debounce';
@@ -40,6 +40,46 @@ function GlobalMemosPage() {
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
   const [nameQuery, setNameQuery] = useState<string>(searchParams.get('name') || '');
+  
+  // ページネーション用のstate
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 9; // 3x3のグリッド
+
+  // useMemoでフィルタリングされたメモを計算
+  const filteredMemos = useMemo(() => {
+    return memos.filter((memo) => {
+      // カテゴリーフィルタ
+      const categoryMatch = category === "all" || memo.category === category;
+      
+      // タイトル検索フィルタ（部分一致、大文字小文字区別なし）
+      const searchMatch = !searchQuery || 
+        memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (memo.subtitle && memo.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // タグ検索フィルタ（複数タグ対応、1つでも一致すればtrue）
+      const tagMatch = !tagQuery || 
+        (() => {
+          if (!memo.tags) return false;
+          
+          // 検索タグをスペースで分割して配列にする
+          const searchTags = tagQuery.toLowerCase().split(' ').filter(tag => tag.trim());
+          const memoTagsLower = memo.tags.toLowerCase();
+          
+          // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
+          return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
+        })();
+
+      const nameMatch = !nameQuery || 
+        (userNames[memo.user_id] && userNames[memo.user_id] != "Unknown" && userNames[memo.user_id].toLowerCase().includes(nameQuery.toLowerCase()));
+      
+      return categoryMatch && searchMatch && tagMatch && nameMatch;
+    });
+  }, [memos, searchQuery, tagQuery, nameQuery, userNames, category]);
+
+  // 総ページ数を計算
+  const totalPage = useMemo(() => {
+    return Math.ceil(filteredMemos.length / ITEMS_PER_PAGE);
+  }, [filteredMemos.length, ITEMS_PER_PAGE]);
 
   // デバウンス処理付きURL更新関数（300ms遅延）
   const updateSearchParams = useDebouncedCallback((search: string, tag: string, name: string) => {
@@ -72,16 +112,19 @@ function GlobalMemosPage() {
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     updateSearchParams(value, tagQuery, nameQuery);
+    setCurrentPage(1); // 検索時は1ページ目に戻る
   };
 
   const handleTagChange = (value: string) => {
     setTagQuery(value);
     updateSearchParams(searchQuery, value, nameQuery);
+    setCurrentPage(1); // タグ検索時は1ページ目に戻る
   };
 
   const handleNameChange = (value: string) => {
     setNameQuery(value);
     updateSearchParams(searchQuery, tagQuery, value);
+    setCurrentPage(1); // 名前検索時は1ページ目に戻る
   };
 
   // Category color mapping
@@ -244,12 +287,11 @@ function GlobalMemosPage() {
               category
             </h3>
             <div className="space-y-1">
-
               {categoryNum && Object.keys(categoryNum).map((key) => (
                 <button 
                   key={key}
                   className={`w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 ${key==category ? "bg-blue-100" : "hover:bg-gray-100"} rounded-lg transition-colors`}
-                  onClick={() => setCategory(key)}
+                  onClick={() => {setCategory(key); setCurrentPage(1);}}
                 >
                   <div className="flex gap-3">
                     <div className={`w-3 h-3 rounded-full ${getCategoryColor(key)} flex-shrink-0 ml-2 mt-1.5`}/>
@@ -287,44 +329,21 @@ function GlobalMemosPage() {
         </header>
 
         {/* Memos Grid */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-8 py-6 pb-24">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {!loading && memos
-              .filter((memo) => {
-                // カテゴリーフィルタ
-                const categoryMatch = category === "all" || memo.category === category;
-                
-                // タイトル検索フィルタ（部分一致、大文字小文字区別なし）
-                const searchMatch = !searchQuery || 
-                  memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (memo.subtitle && memo.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
-                
-                // タグ検索フィルタ（複数タグ対応、1つでも一致すればtrue）
-                const tagMatch = !tagQuery || 
-                  (() => {
-                    if (!memo.tags) return false;
-                    
-                    // 検索タグをスペースで分割して配列にする
-                    const searchTags = tagQuery.toLowerCase().split(' ').filter(tag => tag.trim());
-                    const memoTagsLower = memo.tags.toLowerCase();
-                    
-                    // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
-                    return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
-                  })();
-
-                const nameMatch = !nameQuery || 
-                  (userNames[memo.user_id] && userNames[memo.user_id] != "Unknown" && userNames[memo.user_id].toLowerCase().includes(nameQuery.toLowerCase()));
-                
-                return categoryMatch && searchMatch && tagMatch && nameMatch;
-              })
-              .map((memo) => (
+            {!loading && (() => {
+              const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+              const endIndex = startIndex + ITEMS_PER_PAGE;
+              const paginatedMemos = filteredMemos.slice(startIndex, endIndex);
+              
+              return paginatedMemos.map((memo) => (
               <div
                 key={memo.id}
                 className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
                 onClick={() => {router.push(`/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-xl font-bold text-gray-900 flex-1">
+                  <h2 className="text-xl font-bold text-gray-900 flex-1 truncate">
                     {memo.title}
                   </h2>
                   {memo.category && (
@@ -335,7 +354,7 @@ function GlobalMemosPage() {
                 {/* Subtitle section with min height */}
                 <div className="min-h-[24px] mb-3">
                   {memo.subtitle && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 truncate">
                       {memo.subtitle}
                     </p>
                   )}
@@ -344,11 +363,11 @@ function GlobalMemosPage() {
                 {/* Tags section with min height */}
                 <div className="min-h-[24px] mb-3">
                   {memo.tags && memo.tags.trim().length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 overflow-hidden max-h-[24px]">
                       {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full truncate max-w-[120px]"
                         >
                           {tag}
                         </span>
@@ -360,13 +379,13 @@ function GlobalMemosPage() {
                 {/* ユーザー名表示 */}
                 {memo.user_id && (
                   <div className="mt-auto pt-3 border-t border-gray-100">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 truncate">
                       by <span className="font-sm text-gray-700">{userNames[memo.user_id] || 'Loading...'}</span>
                     </p>
                   </div>
                 )}
               </div>
-            ))}
+            ));})()}
           </div>
 
           {loading && (
@@ -385,6 +404,45 @@ function GlobalMemosPage() {
             </div>
           )}
         </div>
+
+        {/* ページネーションコントロール - 画面下部に固定 */}
+        {!loading && totalPage > 1 && (
+          <div className="fixed bottom-0 left-80 right-0 bg-white border-t border-gray-200 py-4 px-8 shadow-lg">
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                前へ
+              </button>
+              
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPage }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPage, prev + 1))}
+                disabled={currentPage === totalPage}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

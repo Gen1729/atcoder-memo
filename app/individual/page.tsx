@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useMemo } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -41,6 +41,41 @@ function IndividualPage() {
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
+  
+  // ページネーション用のstate
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 9; // 3x3のグリッド
+
+  const filteredMemos = useMemo(() => {
+    return memos.filter((memo) => {
+      const favoriteMatch = !isFavorite || memo.favorite;
+      
+      const categoryMatch = category === "all" || memo.category === category;
+      
+      const searchMatch = !searchQuery || 
+        memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (memo.subtitle && memo.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // タグ検索フィルタ（複数タグ対応、1つでも一致すればtrue）
+      const tagMatch = !tagQuery || 
+        (() => {
+          if (!memo.tags) return false;
+          
+          // 検索タグをスペースで分割して配列にする
+          const searchTags = tagQuery.toLowerCase().split(' ').filter(tag => tag.trim());
+          const memoTagsLower = memo.tags.toLowerCase();
+          
+          // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
+          return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
+        })();
+      
+      return favoriteMatch && categoryMatch && searchMatch && tagMatch;
+    });
+  },[memos, searchQuery, tagQuery, category, isFavorite])
+
+  const totalPage = useMemo(() => {
+    return Math.ceil(filteredMemos.length / ITEMS_PER_PAGE);
+  }, [filteredMemos.length, ITEMS_PER_PAGE]);
 
   // デバウンス処理付きURL更新関数（300ms遅延）
   const updateSearchParams = useDebouncedCallback((search: string, tag: string) => {
@@ -67,11 +102,13 @@ function IndividualPage() {
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     updateSearchParams(value, tagQuery);
+    setCurrentPage(1); // 検索時は1ページ目に戻る
   };
 
   const handleTagChange = (value: string) => {
     setTagQuery(value);
     updateSearchParams(searchQuery, value);
+    setCurrentPage(1); // タグ検索時は1ページ目に戻る
   };
 
   // Category color mapping
@@ -200,7 +237,7 @@ function IndividualPage() {
           <div className="space-y-1">
             <button 
               className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${!isFavorite ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
-              onClick={() => setIsFavorite(false)}
+              onClick={() => {setIsFavorite(false); setCurrentPage(1);}}
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -210,7 +247,7 @@ function IndividualPage() {
             
             <button
               className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${isFavorite ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
-              onClick={() => setIsFavorite(true)}
+              onClick={() => {setIsFavorite(true); setCurrentPage(1);}}
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -224,12 +261,11 @@ function IndividualPage() {
               category
             </h3>
             <div className="space-y-1">
-
               {categoryNum && Object.keys(categoryNum).map((key) => (
                 <button 
                   key={key}
                   className={`w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 ${key==category ? "bg-blue-100" : "hover:bg-gray-100"} rounded-lg transition-colors`}
-                  onClick={() => setCategory(key)}
+                  onClick={() => {setCategory(key); setCurrentPage(1);}}
                 >
                   <div className="flex gap-3">
                     <div className={`w-3 h-3 rounded-full ${getCategoryColor(key)} flex-shrink-0 ml-2 mt-1.5`}/>
@@ -284,47 +320,24 @@ function IndividualPage() {
         </header>
 
         {/* Memos Grid */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="flex-1 overflow-y-auto px-8 py-6 pb-24">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {!loading && memos
-              .filter((memo) => {
-                // お気に入りフィルタ
-                const favoriteMatch = !isFavorite || memo.favorite;
-                
-                // カテゴリーフィルタ
-                const categoryMatch = category === "all" || memo.category === category;
-                
-                // タイトル検索フィルタ（部分一致、大文字小文字区別なし）
-                const searchMatch = !searchQuery || 
-                  memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  (memo.subtitle && memo.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
-                
-                // タグ検索フィルタ（複数タグ対応、1つでも一致すればtrue）
-                const tagMatch = !tagQuery || 
-                  (() => {
-                    if (!memo.tags) return false;
-                    
-                    // 検索タグをスペースで分割して配列にする
-                    const searchTags = tagQuery.toLowerCase().split(' ').filter(tag => tag.trim());
-                    const memoTagsLower = memo.tags.toLowerCase();
-                    
-                    // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
-                    return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
-                  })();
-                
-                return favoriteMatch && categoryMatch && searchMatch && tagMatch;
-              })
-              .map((memo) => (
+            {!loading && (() => {
+              const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+              const endIndex = startIndex + ITEMS_PER_PAGE;
+              const paginatedMemos = filteredMemos.slice(startIndex, endIndex);
+              
+              return paginatedMemos.map((memo) => (
               <div
                 key={memo.id}
                 className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow cursor-pointer min-h-[183px] flex flex-col"
                 onClick={() => {router.push(`/individual/display/${memo.id}`)}}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-xl font-bold text-gray-900 flex-1">
+                  <h2 className="text-xl font-bold text-gray-900 flex-1 truncate">
                     {memo.title}
                   </h2>
-                  <div className="flex items-center">
+                  <div className="flex items-center ml-2 flex-shrink-0">
                     {memo.category && (
                       <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0`} title={memo.category} />
                     )}
@@ -334,7 +347,7 @@ function IndividualPage() {
                 {/* Subtitle section with min height */}
                 <div className="min-h-[24px] mb-3">
                   {memo.subtitle && (
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 truncate">
                       {memo.subtitle}
                     </p>
                   )}
@@ -343,11 +356,11 @@ function IndividualPage() {
                 {/* Tags section with min height */}
                 <div className="min-h-[24px] mb-2">
                   {memo.tags && memo.tags.trim().length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 overflow-hidden max-h-[24px]">
                       {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
                         <span
                           key={index}
-                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full truncate max-w-[120px]"
                         >
                           {tag}
                         </span>
@@ -363,7 +376,8 @@ function IndividualPage() {
                   </div>
                 )}
               </div>
-            ))}
+            ));
+            })()}
           </div>
 
           {loading && (
@@ -382,6 +396,45 @@ function IndividualPage() {
             </div>
           )}
         </div>
+
+        {/* ページネーションコントロール - 画面下部に固定 */}
+        {!loading && totalPage > 1 && (
+          <div className="fixed bottom-0 left-80 right-0 bg-white border-t border-gray-200 py-4 px-8 shadow-lg">
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                前へ
+              </button>
+              
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPage }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPage, prev + 1))}
+                disabled={currentPage === totalPage}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
