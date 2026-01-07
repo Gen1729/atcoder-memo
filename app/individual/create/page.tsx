@@ -129,7 +129,8 @@ export default function Create(){
     isSavingRef.current = true;
     setLoading(true);
 
-    const fixedTags = tags.split(' ').filter(tag => tag.trim()).join(" ");
+    const fixedTags = tags.split(' ').filter(tag => tag.trim());
+    const uniqueFixedTags = [...new Set(fixedTags)].join(" ");
 
     const { error } = await client.from('memos').insert({
       title,
@@ -137,7 +138,7 @@ export default function Create(){
       url,
       content,
       publish,
-      tags : fixedTags,
+      tags : uniqueFixedTags,
       category,
       favorite,
     })
