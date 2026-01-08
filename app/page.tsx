@@ -348,55 +348,56 @@ function GlobalMemosPage() {
               const paginatedMemos = filteredMemos.slice(startIndex, endIndex);
               
               return paginatedMemos.map((memo) => (
-              <div
-                key={memo.id}
-                className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
-                onClick={() => {router.push(`/display/${memo.id}`)}}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-xl font-bold text-gray-900 flex-1 truncate" title={memo.title}>
-                    {memo.title}
-                  </h2>
-                  {memo.category && (
-                    <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0 ml-2 mt-1.5`} title={memo.category} />
-                  )}
-                </div>
-                
-                {/* Subtitle section with min height */}
-                <div className="min-h-[24px] mb-3">
-                  {memo.subtitle && (
-                    <p className="text-sm text-gray-600 truncate" title={memo.subtitle}>
-                      {memo.subtitle}
-                    </p>
-                  )}
-                </div>
-                
-                {/* Tags section with min height */}
-                <div className="min-h-[24px] mb-3">
-                  {memo.tags && memo.tags.trim().length > 0 && (
-                    <div className="flex flex-wrap gap-2 overflow-hidden max-h-[24px]">
-                      {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full truncate max-w-[120px]"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                <div
+                  key={memo.id}
+                  className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
+                  onClick={() => {router.push(`/display/${memo.id}`)}}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h2 className="text-xl font-bold text-gray-900 flex-1 truncate" title={memo.title}>
+                      {memo.title}
+                    </h2>
+                    {memo.category && (
+                      <div className={`w-3 h-3 rounded-full ${getCategoryColor(memo.category)} flex-shrink-0 ml-2 mt-1.5`} title={memo.category} />
+                    )}
+                  </div>
+                  
+                  {/* Subtitle section with min height */}
+                  <div className="min-h-[24px] mb-3">
+                    {memo.subtitle && (
+                      <p className="text-sm text-gray-600 truncate" title={memo.subtitle}>
+                        {memo.subtitle}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Tags section with min height */}
+                  <div className="min-h-[24px] mb-3">
+                    {memo.tags && memo.tags.trim().length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {memo.tags.split(' ').filter(tag => tag.trim()).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full whitespace-nowrap flex-shrink-0"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* ユーザー名表示 */}
+                  {memo.user_id && (
+                    <div className="mt-auto pt-3 border-t border-gray-100">
+                      <p className="text-sm text-gray-500 truncate">
+                        by <span className="font-sm text-gray-700">{userNames[memo.user_id] || 'Loading...'}</span>
+                      </p>
                     </div>
                   )}
                 </div>
-                
-                {/* ユーザー名表示 */}
-                {memo.user_id && (
-                  <div className="mt-auto pt-3 border-t border-gray-100">
-                    <p className="text-sm text-gray-500 truncate">
-                      by <span className="font-sm text-gray-700">{userNames[memo.user_id] || 'Loading...'}</span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            ));})()}
+              ));
+            })()}
           </div>
 
           {loading && (
