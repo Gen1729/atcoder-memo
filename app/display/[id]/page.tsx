@@ -4,6 +4,11 @@ import { useSession } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import 'github-markdown-css/github-markdown.css';
+
 interface Memo {
   id: number;
   user_id: string;
@@ -121,8 +126,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
       <div className="flex-1 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-4xl h-full p-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col p-6">
+        <div className="w-full max-w-4xl h-full p-6 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             {/* Header with back button and title */}
             <div className="flex items-center justify-between mb-4">
               <button
@@ -155,7 +160,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               {memo.subtitle && (
                 <div>
                   <label className="block text-base font-semibold text-gray-700 mb-2">Summary</label>
-                  <p className="text-base text-gray-800">
+                  <p className="text-base text-gray-800 break-words">
                     {memo.subtitle}
                   </p>
                 </div>
@@ -168,12 +173,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     href={memo.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-base text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                    className="text-base text-blue-600 hover:text-blue-800 hover:underline flex break-all"
                   >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    {memo.url}
+                    <span className="break-all">{memo.url}</span>
                   </a>
                 </div>
               )}
@@ -182,10 +184,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             {/* Content - Flexible height */}
             <div className="flex-1 flex flex-col min-h-0 mb-1">
               <label className="block text-base font-semibold text-gray-700 mb-2">Content</label>
-              <div className="flex-1 w-full px-3 py-2 border border-gray-300 rounded-lg overflow-y-auto bg-white">
-                <pre className="whitespace-pre-wrap font-sans text-base text-gray-900">
-                  {memo.content}
-                </pre>
+              <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[490px]">
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                  {memo.content || "*Nothing to preview*"}
+                </ReactMarkdown>
               </div>
               {/* Updated at timestamp - outside content box, bottom right */}
               {memo.updated_at && (

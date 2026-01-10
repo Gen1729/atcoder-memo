@@ -5,6 +5,11 @@ import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 import '../../../components/star.css'
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import 'github-markdown-css/github-markdown.css';
+
 export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [id, setId] = useState<string>('');
   const [loading,setLoading] = useState<boolean>(false);
@@ -16,6 +21,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [tags,setTags] = useState<string>("");
   const [category,setCategory] = useState<string>("");
   const [favorite,setFavorite] = useState<boolean>(false);
+  const [isPreview,setIsPreview] = useState<boolean>(false);
   
   // 変更追跡用: DBから読み込んだ元のデータを保持
   const [hasChanges, setHasChanges] = useState<boolean>(false);
@@ -220,8 +226,8 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
       <div className="flex-1 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-4xl h-full p-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col p-6">
+        <div className="w-full max-w-4xl h-full p-6 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <button
                 type="button"
@@ -248,7 +254,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
               </div>
             </div>
             
-            <form onSubmit={editMemo} className="flex-1 flex flex-col min-h-0">
+            <form onSubmit={editMemo} className="flex flex-col">
               {/* Title */}
               <div className="mb-3">
                 <label htmlFor="title" className="block text-base font-bold text-gray-900 mb-1">
@@ -300,18 +306,52 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
               </div>
 
               {/* Content - Flexible height */}
-              <div className="flex-1 flex flex-col min-h-0 mb-3">
-                <label htmlFor="content" className="block text-base font-semibold text-gray-700 mb-1">
-                  Content
-                </label>
-                <textarea 
-                  id="content"
-                  name="content" 
-                  placeholder="Detailed Content (Option)"
-                  onChange={(e) => setContent(e.target.value)} 
-                  value={content}
-                  className="flex-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                />
+              <div className="flex flex-col mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="content" className="block text-base font-semibold text-gray-700">
+                    Content
+                  </label>
+                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => {setIsPreview(false)}}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                        !isPreview
+                          ? 'bg-white text-gray-900 border-r border-gray-300'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-r border-gray-300'
+                      }`}
+                    >
+                      Write
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPreview(true)}
+                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                        isPreview
+                          ? 'bg-white text-gray-900'
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      Preview
+                    </button>
+                  </div>
+                </div>
+                {isPreview ? (
+                  <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[325px]">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                      {content || "*Nothing to preview*"}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <textarea 
+                    id="content"
+                    name="content"
+                    placeholder="Detailed Content (Option)"
+                    onChange={(e) => setContent(e.target.value)}
+                    value={content}
+                    className="flex-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[325px]"
+                  />
+                )}
               </div>
 
               {/* Bottom Section - Horizontal layout */}
