@@ -139,7 +139,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
       <div className="flex-1 flex items-center justify-center overflow-hidden">
-        <div className="w-full max-w-4xl h-full p-6 overflow-y-auto">
+        <div className="w-full max-w-5xl h-full p-6 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
               <button
