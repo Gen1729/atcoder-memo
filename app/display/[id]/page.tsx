@@ -225,7 +225,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                 Back
               </button>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 break-words">
+                <h1 className="text-2xl font-bold text-gray-900 break-words text-center">
                   {memo.title}
                 </h1>
               </div>
