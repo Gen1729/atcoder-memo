@@ -321,81 +321,13 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
 
             {/* Comments Section */}
             <div className="mt-5 pt-5 border-t-2 border-gray-300">
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">Comments ({comments.length})</h2>
-              
-              {/* Comment Input */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-base font-semibold text-gray-700">
-                    Add a comment
-                  </label>
-                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => setIsCommentPreview(false)}
-                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
-                        !isCommentPreview
-                          ? 'bg-white text-gray-900 border-r border-gray-300'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-r border-gray-300'
-                      }`}
-                    >
-                      Write
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsCommentPreview(true)}
-                      className={`px-4 py-1.5 text-sm font-medium transition-colors ${
-                        isCommentPreview
-                          ? 'bg-white text-gray-900'
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      Preview
-                    </button>
-                  </div>
-                </div>
-                
-                <form onSubmit={handleSubmitComment}>
-                  {isCommentPreview ? (
-                    <>
-                      <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px]">
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                        >
-                          {newComment || "*Nothing to preview*"}
-                        </ReactMarkdown>
-                      </div>
-                      <div className="p-[3px]"></div>
-                    </>
-                    
-                  ) : (
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder={user ? "Write a comment... (Markdown supported)" : "Please login to post comment"}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[150px]"
-                      rows={4}
-                    />
-                  )}
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={!newComment.trim() || !user}
-                      className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Post Comment
-                    </button>
-                  </div>
-                </form>
-              </div>
-
+              {comments.length > 0 && (
+                <h2 className="text-xl font-bold text-gray-900 mb-3">Comments ({comments.length})</h2>
+              )}
               {/* Comments Thread */}
               <div className="space-y-4">
                 {comments.length === 0 ? (
-                  <div className="text-center py-1 text-gray-500">
-                    <p>No comments yet.</p>
-                  </div>
+                  <></>
                 ) : (
                   comments.map((comment) => (
                     <div key={comment.unique_id} className="border border-gray-300 rounded-lg overflow-hidden">
@@ -428,6 +360,79 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                     </div>
                   ))
                 )}
+              </div>
+
+              {/* Comment Input */}
+              <div className={`${comments.length > 0 ? "mt-6" : ""} mb-6`}>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-base font-semibold text-gray-700">
+                    Add a comment
+                  </label>
+                  {user ? (
+                    <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setIsCommentPreview(false)}
+                        className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                          !isCommentPreview
+                            ? 'bg-white text-gray-900 border-r border-gray-300'
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-r border-gray-300'
+                        }`}
+                      >
+                        Write
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsCommentPreview(true)}
+                        className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+                          isCommentPreview
+                            ? 'bg-white text-gray-900'
+                            : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  ):(
+                    <div className="text-base mr-3">
+                      Please login to post your comment
+                    </div>
+                  )}
+                </div>
+                
+                <form onSubmit={handleSubmitComment}>
+                  {isCommentPreview ? (
+                    <>
+                      <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px]">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {newComment || "*Nothing to preview*"}
+                        </ReactMarkdown>
+                      </div>
+                      <div className="p-[3px]"></div>
+                    </>
+                  ) : (
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder={user ? "Write a comment... (Markdown supported)" : ""}
+                      disabled={!user}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[150px]"
+                      rows={4}
+                    />
+                  )}
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={!newComment.trim() || !user}
+                      className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Post Comment
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
