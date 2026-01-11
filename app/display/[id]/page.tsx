@@ -98,7 +98,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
 
   // コメントを読み込む関数
   async function loadComment() {
-    setLoading(true);
     const client = createClerkSupabaseClient();
     const { data, error } = await client
       .from('comments')
@@ -130,7 +129,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
         }
       }
     }
-    setLoading(false);
   }
 
   // Fetch memo data
