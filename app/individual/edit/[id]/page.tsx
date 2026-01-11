@@ -10,6 +10,10 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import 'github-markdown-css/github-markdown.css';
 
+import rehypeKatex from 'rehype-katex'
+import remarkMath from 'remark-math'
+import 'katex/dist/katex.min.css'
+
 export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [id, setId] = useState<string>('');
   const [loading,setLoading] = useState<boolean>(false);
@@ -338,7 +342,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                 </div>
                 {isPreview ? (
                   <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[325px]">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} rehypePlugins={[rehypeKatex]}>
                       {content || "*Nothing to preview*"}
                     </ReactMarkdown>
                   </div>

@@ -12,12 +12,15 @@
     "@clerk/nextjs": "^6.36.5",
     "@supabase/supabase-js": "^2.89.0",
     "github-markdown-css": "^5.8.1",
+    "katex": "^0.16.27",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "use-debounce": "^10.0.6"
   },
   "devDependencies": {

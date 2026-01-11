@@ -10,6 +10,10 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import 'github-markdown-css/github-markdown.css';
 
+import rehypeKatex from 'rehype-katex'
+import remarkMath from 'remark-math'
+import 'katex/dist/katex.min.css'
+
 export default function Create(){
   const [loading,setLoading] = useState<boolean>(false);
   const [title,setTitle] = useState<string>("");
@@ -292,7 +296,7 @@ export default function Create(){
                 </div>
                 {isPreview ? (
                   <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[325px]">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} rehypePlugins={[rehypeKatex]}>
                       {content || "*Nothing to preview*"}
                     </ReactMarkdown>
                   </div>

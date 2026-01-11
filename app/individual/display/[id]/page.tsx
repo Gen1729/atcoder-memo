@@ -10,6 +10,10 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import 'github-markdown-css/github-markdown.css';
 
+import rehypeKatex from 'rehype-katex'
+import remarkMath from 'remark-math'
+import 'katex/dist/katex.min.css'
+
 interface Memo {
   id: number;
   title: string;
@@ -227,7 +231,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <div className="flex-1 flex flex-col min-h-0 mb-1">
               <label className="block text-base font-semibold text-gray-700 mb-2">Content</label>
               <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[490px]">
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} rehypePlugins={[rehypeKatex]}>
                   {memo.content || "*Nothing to preview*"}
                 </ReactMarkdown>
               </div>
