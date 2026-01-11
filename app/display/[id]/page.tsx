@@ -214,24 +214,22 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <div className="w-full max-w-5xl h-full p-6 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            {/* Header with back button and title */}
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
               <button
                 onClick={() => router.push('/')}
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Back
               </button>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 break-words">
                   {memo.title}
                 </h1>
               </div>
-              {/* User Name and Updated Time Display */}
-              <div className="min-w-16">
+              <div className="flex-shrink-0">
                 {memo.user_id && (
                   <div className="text-sm text-gray-500">
                     by <span className="font-medium text-gray-700">{userName || 'Loading...'}</span>
@@ -322,8 +320,8 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
             </div>
 
             {/* Comments Section */}
-            <div className="mt-8 pt-8 border-t-2 border-gray-300">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Comments ({comments.length})</h2>
+            <div className="mt-5 pt-5 border-t-2 border-gray-300">
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Comments ({comments.length})</h2>
               
               {/* Comment Input */}
               <div className="mb-6">
@@ -395,7 +393,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
               {/* Comments Thread */}
               <div className="space-y-4">
                 {comments.length === 0 ? (
-                  <div className="text-center py-3 text-gray-500">
+                  <div className="text-center py-1 text-gray-500">
                     <p>No comments yet.</p>
                   </div>
                 ) : (

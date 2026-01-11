@@ -145,22 +145,22 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <div className="w-full max-w-5xl h-full p-6 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
               <button
                 onClick={() => router.push('/individual')}
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0"
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Back
               </button>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 break-words">
                   {memo.title}
                 </h1>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-shrink-0">
                 {/* Edit Button */}
                 <button
                   onClick={() => router.push(`/individual/edit/${id}`)}
