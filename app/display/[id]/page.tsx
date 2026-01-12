@@ -33,6 +33,7 @@ interface Comment {
   user_id: string;
   content: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
@@ -49,6 +50,11 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [newComment, setNewComment] = useState<string>('');
   const [isCommentPreview, setIsCommentPreview] = useState<boolean>(false);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  
+  // コメント編集用のstate
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>('');
+  const [isEditPreview, setIsEditPreview] = useState<boolean>(false);
 
   // Unwrap params
   useEffect(() => {
@@ -96,6 +102,50 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     loadComment();
   };
 
+  // コメント編集処理
+  async function handleEditComment(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editContent.trim() || !editingCommentId) return;
+
+    const client = createClerkSupabaseClient();
+    const { error } = await client
+      .from('comments')
+      .update({
+        content: editContent,
+      })
+      .eq('unique_id', editingCommentId);
+
+    if (error) {
+      console.error('Error updating comment:', error);
+      alert(`Error: ${error.message}`);
+      return;
+    }
+
+    setEditingCommentId(null);
+    setEditContent('');
+    setIsEditPreview(false);
+    loadComment();
+  }
+
+  // コメント削除処理
+  async function handleDeleteComment(commentId: string) {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    const client = createClerkSupabaseClient();
+    const { error } = await client
+      .from('comments')
+      .delete()
+      .eq('unique_id', commentId);
+
+    if (error) {
+      console.error('Error deleting comment:', error);
+      alert(`Error: ${error.message}`);
+      return;
+    }
+
+    loadComment();
+  }
+
   // コメントを読み込む関数
   async function loadComment() {
     const client = createClerkSupabaseClient();
@@ -103,6 +153,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       .from('comments')
       .select('*')
       .eq('id', id)
+      .order('created_at', { ascending: true });
 
     if (error) {
       console.error('Error loading comments:', error);
@@ -329,32 +380,137 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                 ) : (
                   comments.map((comment) => (
                     <div key={comment.unique_id} className="border border-gray-300 rounded-lg overflow-hidden">
-                      {/* Header - User info and timestamp */}
-                      <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id]}</span>
-                          {comment.created_at && (
-                            <span className="text-sm text-gray-600">
-                              {new Date(comment.created_at).toLocaleDateString('ja-JP', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {/* Comment body */}
-                      <div className="markdown-body bg-white p-4">
-                        <ReactMarkdown 
-                          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
-                        >
-                          {comment.content}
-                        </ReactMarkdown>
-                      </div>
+                      {editingCommentId === comment.unique_id ? (
+                        /* 編集モード */
+                        <>
+                          <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id]}</span>
+                              <span className="text-sm text-gray-600">Editing...</span>
+                            </div>
+                            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setIsEditPreview(false)}
+                                className={`px-3 py-1 text-xs font-medium transition-colors ${
+                                  !isEditPreview
+                                    ? 'bg-white text-gray-900 border-r border-gray-300'
+                                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-r border-gray-300'
+                                }`}
+                              >
+                                Write
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setIsEditPreview(true)}
+                                className={`px-3 py-1 text-xs font-medium transition-colors ${
+                                  isEditPreview
+                                    ? 'bg-white text-gray-900'
+                                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                Preview
+                              </button>
+                            </div>
+                          </div>
+                          <div className="bg-white p-4">
+                            <form onSubmit={handleEditComment}>
+                              {isEditPreview ? (
+                                <>
+                                  <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px] mb-3">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
+                                      rehypePlugins={[rehypeKatex]}
+                                    >
+                                      {editContent || "*Nothing to preview*"}
+                                    </ReactMarkdown>
+                                  </div>
+                                  <div className="p-[3px]"></div>
+                                </>
+                                
+                              ) : (
+                                <textarea
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[150px]"
+                                  rows={4}
+                                />
+                              )}
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingCommentId(null);
+                                    setEditContent('');
+                                    setIsEditPreview(false);
+                                  }}
+                                  className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="submit"
+                                  disabled={!editContent.trim()}
+                                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            </form>
+                          </div>
+                        </>
+                      ) : (
+                        /* 通常表示モード */
+                        <>
+                          <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id]}</span>
+                              {comment.created_at && (
+                                <span className="text-sm text-gray-600">
+                                  {new Date(comment.created_at).toLocaleDateString('ja-JP', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              )}
+                              {comment.updated_at && comment.updated_at !== comment.created_at && (
+                                <span className="text-xs text-gray-500 italic">(edited)</span>
+                              )}
+                            </div>
+                            {user && user.id === comment.user_id && (
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setEditingCommentId(comment.unique_id);
+                                    setEditContent(comment.content);
+                                    setIsEditPreview(false);
+                                  }}
+                                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteComment(comment.unique_id)}
+                                  className="text-sm text-red-600 hover:text-red-800 font-medium"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="markdown-body bg-white p-4">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {comment.content}
+                            </ReactMarkdown>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))
                 )}
