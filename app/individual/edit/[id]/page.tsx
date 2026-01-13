@@ -33,6 +33,9 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [initialLoadComplete, setInitialLoadComplete] = useState<boolean>(false);
   // 保存処理中フラグ: useRefで即座に反映（状態更新の遅延を回避）
   const isSavingRef = useRef<boolean>(false);
+  // スクロール位置を保存するref
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   const router = useRouter();
   const { user } = useUser();
@@ -174,6 +177,13 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [hasChanges]);
+
+  // PreviewからWriteに戻った時にスクロール位置を復元
+  useEffect(() => {
+    if (!isPreview && contentTextareaRef.current) {
+      contentTextareaRef.current.scrollTop = scrollPositionRef.current;
+    }
+  }, [isPreview]);
 
   async function editMemo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -318,7 +328,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                   <div className="flex border border-gray-300 rounded-lg overflow-hidden">
                     <button
                       type="button"
-                      onClick={() => {setIsPreview(false)}}
+                      onClick={() => setIsPreview(false)}
                       className={`px-4 py-1.5 text-sm font-medium transition-colors ${
                         !isPreview
                           ? 'bg-white text-gray-900 border-r border-gray-300'
@@ -329,7 +339,13 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                     </button>
                     <button
                       type="button"
-                      onClick={() => setIsPreview(true)}
+                      onClick={() => {
+                        // WriteからPreviewに切り替える前にスクロール位置を保存
+                        if (!isPreview && contentTextareaRef.current) {
+                          scrollPositionRef.current = contentTextareaRef.current.scrollTop;
+                        }
+                        setIsPreview(true);
+                      }}
                       className={`px-4 py-1.5 text-sm font-medium transition-colors ${
                         isPreview
                           ? 'bg-white text-gray-900'
@@ -348,6 +364,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                   </div>
                 ) : (
                   <textarea 
+                    ref={contentTextareaRef}
                     id="content"
                     name="content"
                     placeholder="Detailed Content (Option)"
