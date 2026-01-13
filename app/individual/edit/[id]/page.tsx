@@ -235,7 +235,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
             <div className="flex items-center justify-between mb-4">
               <button
                 type="button"
-                onClick={() => router.push('/individual')}
+                onClick={() => router.push(`/individual/display/${id}`)}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,8 +413,22 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                 </div>
               </div>
 
-              {/* Create Button - Bottom Right */}
-              <div className="flex justify-end pt-4">
+              {/* Edit and Cancel Buttons - Bottom Right */}
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (!window.confirm('Are you sure you want to cancel? All unsaved changes will be lost.'))return;
+                    sessionStorage.removeItem(`memo-draft-${id}`);
+                    router.push(`/individual/display/${id}`);
+                  }}
+                  className="flex items-center px-4.5 py-2 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors shadow-sm"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancel
+                </button>
                 <button 
                   type="submit"
                   className="flex items-center px-4.5 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors shadow-sm"

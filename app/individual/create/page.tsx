@@ -367,8 +367,25 @@ export default function Create(){
                 </div>
               </div>
 
-              {/* Create Button - Bottom Right */}
-              <div className="flex justify-end pt-4">
+              {/* Create and Cancel Buttons - Bottom Right */}
+              <div className="flex justify-end gap-3 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const hasContent = title || subtitle || url || content || tags;
+                    if (hasContent){
+                      if (!window.confirm('Are you sure you want to cancel? All unsaved changes will be lost.'))return;
+                    }
+                    sessionStorage.removeItem('memo-draft-new');
+                    router.push('/individual');
+                  }}
+                  className="flex items-center px-4.5 py-2 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition-colors shadow-sm"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cancel
+                </button>
                 <button 
                   type="submit"
                   className="flex items-center px-4.5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
