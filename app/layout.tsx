@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Atcoder Memo',
-  description: 'Manage your AtCoder problem-solving notes and strategies',
+  description: 'Manage your AtCoder problem-solving notes and resolve your questions',
+  icons: [{ rel: 'icon', url: "/note.png" }],
 }
 
 export default function RootLayout({
