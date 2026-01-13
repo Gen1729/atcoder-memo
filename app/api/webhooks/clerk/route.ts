@@ -4,11 +4,16 @@ import { WebhookEvent } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: Request) {
+  console.log('=== Webhook received ===')
+  
   // Webhook署名検証のための環境変数
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
   if (!WEBHOOK_SECRET) {
-    throw new Error('CLERK_WEBHOOK_SECRET is not defined')
+    console.error('CLERK_WEBHOOK_SECRET is not defined')
+    return new Response('Server configuration error', {
+      status: 500,
+    })
   }
 
   // Svixヘッダーを取得
@@ -17,16 +22,19 @@ export async function POST(req: Request) {
   const svix_timestamp = headerPayload.get('svix-timestamp')
   const svix_signature = headerPayload.get('svix-signature')
 
+  console.log('Headers:', { svix_id, svix_timestamp, svix_signature })
+
   // ヘッダーが存在しない場合はエラー
   if (!svix_id || !svix_timestamp || !svix_signature) {
+    console.error('Missing svix headers')
     return new Response('Error: Missing svix headers', {
       status: 400,
     })
   }
 
-  // リクエストボディを取得
-  const payload = await req.json()
-  const body = JSON.stringify(payload)
+  // リクエストボディを取得（生のテキストとして）
+  const body = await req.text()
+  console.log('Body received, length:', body.length)
 
   // Webhookインスタンスを作成して検証
   const wh = new Webhook(WEBHOOK_SECRET)
@@ -39,18 +47,26 @@ export async function POST(req: Request) {
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
     }) as WebhookEvent
+    console.log('Webhook verified successfully, event type:', evt.type)
   } catch (err) {
-    console.error('Error: Webhook verification failed', err)
+    console.error('Webhook verification failed:', err)
     return new Response('Error: Webhook verification failed', {
       status: 400,
     })
   }
 
   // Supabaseクライアントを作成（Service Roleキーを使用）
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Supabase configuration missing')
+    return new Response('Server configuration error', {
+      status: 500,
+    })
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
 
   // イベントタイプに応じた処理
   const eventType = evt.type
@@ -64,6 +80,7 @@ export async function POST(req: Request) {
 
       try {
         // まずmemosテーブルから削除（外部キー制約を考慮）
+        console.log(`Deleting memos for user: ${deletedUserId}`)
         const { error: memosError } = await supabase
           .from('memos')
           .delete()
@@ -71,9 +88,12 @@ export async function POST(req: Request) {
 
         if (memosError) {
           console.error('Error deleting memos:', memosError)
+        } else {
+          console.log('Memos deleted successfully')
         }
 
         // 次にprofilesテーブルから削除
+        console.log(`Deleting profile for user: ${deletedUserId}`)
         const { error: profilesError } = await supabase
           .from('profiles')
           .delete()
@@ -81,6 +101,11 @@ export async function POST(req: Request) {
 
         if (profilesError) {
           console.error('Error deleting profile:', profilesError)
+          return new Response('Error: Failed to delete profile', {
+            status: 500,
+          })
+        } else {
+          console.log('Profile deleted successfully')
         }
 
         console.log(`Successfully deleted data for user: ${deletedUserId}`)
@@ -103,6 +128,7 @@ export async function POST(req: Request) {
         console.log(`User updated: ${updatedUserId}, new email: ${primaryEmail.email_address}`)
 
         try {
+          // profilesテーブルのメールアドレスを更新
           const { error: updateError } = await supabase
             .from('profiles')
             .update({
@@ -124,6 +150,8 @@ export async function POST(req: Request) {
             status: 500,
           })
         }
+      } else {
+        console.log(`No primary email found for user: ${updatedUserId}`)
       }
       break
 
