@@ -1,0 +1,124 @@
+import { Webhook } from 'svix'
+import { headers } from 'next/headers'
+import { WebhookEvent } from '@clerk/nextjs/server'
+import { createClient } from '@supabase/supabase-js'
+
+export async function POST(req: Request) {
+  // Webhook署名検証のための環境変数
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
+
+  if (!WEBHOOK_SECRET) {
+    throw new Error('CLERK_WEBHOOK_SECRET is not defined')
+  }
+
+  // Svixヘッダーを取得
+  const headerPayload = await headers()
+  const svix_id = headerPayload.get('svix-id')
+  const svix_timestamp = headerPayload.get('svix-timestamp')
+  const svix_signature = headerPayload.get('svix-signature')
+
+  // ヘッダーが存在しない場合はエラー
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return new Response('Error: Missing svix headers', {
+      status: 400,
+    })
+  }
+
+  // リクエストボディを取得
+  const payload = await req.json()
+  const body = JSON.stringify(payload)
+
+  // Webhookインスタンスを作成して検証
+  const wh = new Webhook(WEBHOOK_SECRET)
+
+  let evt: WebhookEvent
+
+  try {
+    evt = wh.verify(body, {
+      'svix-id': svix_id,
+      'svix-timestamp': svix_timestamp,
+      'svix-signature': svix_signature,
+    }) as WebhookEvent
+  } catch (err) {
+    console.error('Error: Webhook verification failed', err)
+    return new Response('Error: Webhook verification failed', {
+      status: 400,
+    })
+  }
+
+  // Supabaseクライアントを作成（Service Roleキーを使用）
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // イベントタイプに応じた処理
+  const eventType = evt.type
+
+  switch (eventType) {
+    case 'user.deleted':
+      // ユーザー削除時の処理
+      const deletedUserId = evt.data.id
+      
+      console.log(`User deleted: ${deletedUserId}`)
+
+      try {
+        const { error: profilesError } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('user_id', deletedUserId)
+
+        if (profilesError) {
+          console.error('Error deleting profile:', profilesError)
+        }
+
+        console.log(`Successfully deleted data for user: ${deletedUserId}`)
+      } catch (error) {
+        console.error('Error in user deletion process:', error)
+        return new Response('Error: Failed to delete user data', {
+          status: 500,
+        })
+      }
+      break
+
+    case 'user.updated':
+      // ユーザー情報更新時の処理（メールアドレス変更を含む）
+      const updatedUserId = evt.data.id
+      const primaryEmail = evt.data.email_addresses.find(
+        (email) => email.id === evt.data.primary_email_address_id
+      )
+
+      if (primaryEmail) {
+        console.log(`User updated: ${updatedUserId}, new email: ${primaryEmail.email_address}`)
+
+        try {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              email: primaryEmail.email_address,
+            })
+            .eq('user_id', updatedUserId)
+
+          if (updateError) {
+            console.error('Error updating profile email:', updateError)
+            return new Response('Error: Failed to update email', {
+              status: 500,
+            })
+          }
+
+          console.log(`Successfully updated email for user: ${updatedUserId}`)
+        } catch (error) {
+          console.error('Error in user update process:', error)
+          return new Response('Error: Failed to update user data', {
+            status: 500,
+          })
+        }
+      }
+      break
+
+    default:
+      console.log(`Unhandled event type: ${eventType}`)
+  }
+
+  return new Response('Webhook processed successfully', { status: 200 })
+}
