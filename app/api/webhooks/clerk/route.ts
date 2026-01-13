@@ -79,20 +79,7 @@ export async function POST(req: Request) {
       console.log(`User deleted: ${deletedUserId}`)
 
       try {
-        // まずmemosテーブルから削除（外部キー制約を考慮）
-        console.log(`Deleting memos for user: ${deletedUserId}`)
-        const { error: memosError } = await supabase
-          .from('memos')
-          .delete()
-          .eq('user_id', deletedUserId)
-
-        if (memosError) {
-          console.error('Error deleting memos:', memosError)
-        } else {
-          console.log('Memos deleted successfully')
-        }
-
-        // 次にprofilesテーブルから削除
+        //profilesテーブルから削除
         console.log(`Deleting profile for user: ${deletedUserId}`)
         const { error: profilesError } = await supabase
           .from('profiles')
