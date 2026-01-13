@@ -36,6 +36,7 @@ function GlobalMemosPage() {
   const [category,setCategory] = useState<string>("all");
   const [categoryNum,setCategoryNum] = useState<Category>();
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [memoType, setMemoType] = useState<"all" | "memo" | "question">("all");
   
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
@@ -292,8 +293,38 @@ function GlobalMemosPage() {
         </div>
 
         {/* Menu Section */}
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <div>
+        <nav className="flex-1 pl-4 pr-4 pb-4 pt-6 overflow-y-auto">
+          <div className="space-y-1">
+            <button 
+              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "all" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
+              onClick={() => {setMemoType("all"); setCurrentPage(1);}}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              All
+            </button>
+            <button 
+              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "memo" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
+              onClick={() => {setMemoType("memo"); setCurrentPage(1);}}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Memo
+            </button>
+            <button
+              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "question" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
+              onClick={() => {setMemoType("question"); setCurrentPage(1);}}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Question
+            </button>
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-gray-200">
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               category
             </h3>
@@ -335,7 +366,7 @@ function GlobalMemosPage() {
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Global Memo</h1>
-            <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0}件のメモ</p>
+            <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0} memos</p>
           </div>
         </header>
 

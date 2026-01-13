@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState, useMemo } from 'react'
+import { Suspense, useEffect, useState, useMemo, memo } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -36,6 +36,7 @@ function IndividualPage() {
   const [category, setCategory] = useState<string>("all");
   const [categoryNum, setCategoryNum] = useState<Category>();
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const [memoType, setMemoType] = useState<"all" | "memo" | "question">("all");
   const { user } = useUser();
   const { session } = useSession();
   
@@ -253,7 +254,7 @@ function IndividualPage() {
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              All Memo
+              All
             </button>
             
             <button
@@ -263,11 +264,41 @@ function IndividualPage() {
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
-              Favorite Memo
+              Favorite
             </button>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-4 pt-4 border-t border-gray-200 space-y-1">
+            <button 
+              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "all" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
+              onClick={() => {setMemoType("all"); setCurrentPage(1);}}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+              All
+            </button>
+            <button 
+              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "memo" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
+              onClick={() => {setMemoType("memo"); setCurrentPage(1);}}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Memo
+            </button>
+            <button
+              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "question" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
+              onClick={() => {setMemoType("question"); setCurrentPage(1);}}
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Question
+            </button>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-200">
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               category
             </h3>
@@ -316,7 +347,7 @@ function IndividualPage() {
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Memo</h1>
-            <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0}件のメモ</p>
+            <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0} memos</p>
           </div>
           
           <button 
