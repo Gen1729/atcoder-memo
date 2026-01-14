@@ -15,7 +15,6 @@ import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
 interface Memo {
-  id: number;
   title: string;
   subtitle?: string;
   url?: string;
@@ -63,7 +62,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       setLoading(true);
       const { data, error } = await client
         .from('memos')
-        .select('*')
+        .select('title, subtitle, url, content, publish, tags, category, favorite, updated_at')
         .eq('id', id)
         .single();
 

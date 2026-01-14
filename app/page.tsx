@@ -17,12 +17,8 @@ interface Memo {
   user_id: string;
   title: string;
   subtitle?: string;
-  url?: string;
-  content?: string;
-  publish?: boolean;
   tags?: string;
   category: string;
-  favorite: boolean;
   created_at?: string;
 }
 
@@ -163,7 +159,7 @@ function GlobalMemosPage() {
       // Fetch only public memos
       const { data, error } = await client
         .from('memos')
-        .select()
+        .select('id, user_id, title, subtitle, tags, category, created_at')
         .eq('publish', true);
       
       if (error) {

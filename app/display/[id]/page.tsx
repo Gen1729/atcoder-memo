@@ -14,22 +14,18 @@ import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
 interface Memo {
-  id: number;
   user_id: string;
   title: string;
   subtitle?: string;
   url?: string;
   content?: string;
-  publish?: boolean;
   tags?: string;
   category: string;
-  favorite: boolean;
   updated_at?: string;
 }
 
 interface Comment {
   unique_id: string;
-  id: string;
   user_id: string;
   content: string;
   created_at?: string;
@@ -151,7 +147,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     const client = createClerkSupabaseClient();
     const { data, error } = await client
       .from('comments')
-      .select('*')
+      .select('unique_id, user_id, content, created_at, updated_at')
       .eq('id', id)
       .order('created_at', { ascending: true });
 
@@ -191,7 +187,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       const client = createClerkSupabaseClient();
       const { data, error } = await client
         .from('memos')
-        .select('*')
+        .select('user_id, title, subtitle, url, content, tags, category, updated_at')
         .eq('id', id)
         .eq('publish', true)
         .single();

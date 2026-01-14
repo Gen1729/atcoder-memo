@@ -75,7 +75,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
       // DBからメモデータを取得
       const { data, error } = await client
         .from('memos')
-        .select('*')
+        .select('title, subtitle, url, content, publish, tags, category, favorite')
         .eq('id', id)
         .single();
 
