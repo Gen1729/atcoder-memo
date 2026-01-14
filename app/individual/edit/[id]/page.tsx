@@ -14,6 +14,17 @@ import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
+interface Memo {
+  title: string;
+  subtitle?: string;
+  url?: string;
+  content?: string;
+  publish?: boolean;
+  tags?: string;
+  category: string;
+  favorite: boolean;
+}
+
 export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [id, setId] = useState<string>('');
   const [loading,setLoading] = useState<boolean>(false);
@@ -26,9 +37,8 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
   const [category,setCategory] = useState<string>("");
   const [favorite,setFavorite] = useState<boolean>(false);
   const [isPreview,setIsPreview] = useState<boolean>(false);
+  const [prevMemo, setPrevMemo] = useState<Memo>();
   
-  // 変更追跡用: DBから読み込んだ元のデータを保持
-  const [hasChanges, setHasChanges] = useState<boolean>(false);
   // 初回ロード完了フラグ: DBデータ読み込みが完了したかを追跡
   const [initialLoadComplete, setInitialLoadComplete] = useState<boolean>(false);
   // 保存処理中フラグ: useRefで即座に反映（状態更新の遅延を回避）
@@ -102,7 +112,6 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
           setTags(draft.tags || '');
           setCategory(draft.category || '');
           setFavorite(draft.favorite || false);
-          setHasChanges(true); // 下書き復元時は変更ありとマーク
         } else {
           // 下書きを破棄してDBデータを使用
           sessionStorage.removeItem(draftKey);
@@ -126,12 +135,14 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
         setCategory(data.category || '');
         setFavorite(data.favorite || false);
       }
+
+      setPrevMemo(data);
       
       setInitialLoadComplete(true);
       setLoading(false);
     }
 
-    if(!hasChanges)loadMemo();
+    if (!prevMemo)loadMemo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, session, id]);
 
@@ -156,8 +167,6 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     const draftKey = `memo-draft-${id}`;
     sessionStorage.setItem(draftKey, JSON.stringify(formData));
     
-    // 変更があったことをマーク
-    setHasChanges(true);
   }, [id, title, subtitle, url, content, publish, tags, category, favorite, initialLoadComplete]);
 
   // ページ離脱時の警告
@@ -165,9 +174,11 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
   // isSavingRef.current を使うことで保存処理中は警告を出さない
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasChanges && !isSavingRef.current) {
-        e.preventDefault();
-        e.returnValue = ''; // Chrome requires returnValue to be set
+      if (!prevMemo || prevMemo.title != title || prevMemo.subtitle != subtitle || prevMemo.content != content || prevMemo.tags != tags){
+        if (!isSavingRef.current) {
+          e.preventDefault();
+          e.returnValue = ''; // Chrome requires returnValue to be set
+        }
       }
     };
 
@@ -176,7 +187,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [hasChanges]);
+  }, [title, subtitle, content, tags, prevMemo]);
 
   // PreviewからWriteに戻った時にスクロール位置を復元
   useEffect(() => {
@@ -222,9 +233,6 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     const draftKey = `memo-draft-${id}`;
     sessionStorage.removeItem(draftKey);
     
-    // 変更フラグをリセット（警告を出さないようにする）
-    setHasChanges(false);
-    
     // useRefを使用しているため、即座に遷移しても問題なし
     router.push(`/individual/display/${id}`);
   }
@@ -245,7 +253,12 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
             <div className="flex items-center justify-between mb-4">
               <button
                 type="button"
-                onClick={() => router.push(`/individual/display/${id}`)}
+                onClick={() => {
+                  if(prevMemo && prevMemo.title == title && prevMemo.subtitle == subtitle && prevMemo.content == content && prevMemo.tags == tags){
+                    sessionStorage.removeItem(`memo-draft-${id}`);
+                  }
+                  router.push(`/individual/display/${id}`)
+                }}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,7 +448,9 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                 <button 
                   type="button"
                   onClick={() => {
-                    if (!window.confirm('Are you sure you want to cancel? All unsaved changes will be lost.'))return;
+                    if (!prevMemo || prevMemo.title != title || prevMemo.subtitle != subtitle || prevMemo.content != content || prevMemo.tags != tags){
+                      if (!window.confirm('Are you sure you want to cancel? All unsaved changes will be lost.'))return;
+                    }
                     sessionStorage.removeItem(`memo-draft-${id}`);
                     router.push(`/individual/display/${id}`);
                   }}
