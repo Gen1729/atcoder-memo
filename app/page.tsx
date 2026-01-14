@@ -46,6 +46,12 @@ function GlobalMemosPage() {
   // ソート順のstate (true: 降順, false: 昇順)
   const [isDescending, setIsDescending] = useState<boolean>(true);
 
+  // Create anonymous Supabase client for public memos (no auth required)
+  const client = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   // useMemoでフィルタリングされたメモを計算
   const filteredMemos = useMemo(() => {
     const filtered =  memos.filter((memo) => {
@@ -150,11 +156,6 @@ function GlobalMemosPage() {
   useEffect(() => {
     async function loadMemos() {
       setLoading(true);
-      // Create anonymous Supabase client for public memos (no auth required)
-      const client = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       
       // Fetch only public memos
       const { data, error } = await client

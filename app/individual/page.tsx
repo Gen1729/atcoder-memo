@@ -146,12 +146,13 @@ function IndividualPage() {
     )
   }
 
+  const client = createClerkSupabaseClient();
+
   useEffect(() => {
     if (!user || !session) return;
 
     async function loadMemos() {
       setLoading(true);
-      const client = createClerkSupabaseClient();
       const { data, error } = await client
         .from('memos')
         .select('id, title, subtitle, publish, tags, category, favorite, created_at')

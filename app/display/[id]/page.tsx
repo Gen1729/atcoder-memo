@@ -51,7 +51,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [isEditPreview, setIsEditPreview] = useState<boolean>(false);
-  
+
   useEffect(() => {
     params.then((p) => setId(p.id));
   }, [params]);
@@ -69,6 +69,8 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     )
   }
 
+  const client = createClerkSupabaseClient();
+
   // コメント送信処理
   async function handleSubmitComment(e: React.FormEvent<HTMLFormElement>){
     e.preventDefault();
@@ -78,7 +80,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       return;
     }
 
-    const client = createClerkSupabaseClient();
     const { error } = await client.from('comments').insert({
       id: id, // メモのID
       user_id: user.id, // 認証されたユーザーのID
@@ -102,7 +103,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     e.preventDefault();
     if (!editContent.trim() || !editingCommentId) return;
 
-    const client = createClerkSupabaseClient();
     const { error } = await client
       .from('comments')
       .update({
@@ -126,7 +126,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   async function handleDeleteComment(commentId: string) {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
 
-    const client = createClerkSupabaseClient();
     const { error } = await client
       .from('comments')
       .delete()
@@ -141,22 +140,23 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     loadComment();
   }
 
-  // コメントを読み込む関数
+  // コメントを読み込む関数（コメント作成・編集・削除後に使用）
   async function loadComment() {
-    const client = createClerkSupabaseClient();
-    const { data, error } = await client
-      .from('comments')
-      .select('unique_id, user_id, content, created_at, updated_at')
-      .eq('id', id)
-      .order('created_at', { ascending: true });
+    const [commentsResult] = await Promise.all([
+      client
+        .from('comments')
+        .select('unique_id, user_id, content, created_at, updated_at')
+        .eq('id', id)
+        .order('created_at', { ascending: true })
+    ]);
 
-    if (error) {
-      console.error('Error loading comments:', error);
+    if (commentsResult.error) {
+      console.error('Error loading comments:', commentsResult.error);
     } else {
-      setComments(data);
+      setComments(commentsResult.data);
 
       // ユニークなuser_idを抽出
-      const uniqueUserIds = [...new Set(data.map(comment => comment.user_id))].filter(Boolean);
+      const uniqueUserIds = [...new Set(commentsResult.data.map(comment => comment.user_id))].filter(Boolean);
       
       if (uniqueUserIds.length > 0) {
         // プロファイル情報を一括取得
@@ -167,7 +167,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
         
         if (!profileError && profiles) {
           // user_id → atcoder_usernameのマップを作成
-          const nameMap: Record<string, string> = {};
+          const nameMap: Record<string, string> = { ...userNames };
           profiles.forEach(profile => {
             nameMap[profile.user_id] = profile.atcoder_username || 'Unknown';
           });
@@ -181,39 +181,74 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   useEffect(() => {
     if (!id) return;
 
-    async function loadMemo() {
+    async function loadMemoAndComments() {
       setLoading(true);
-      const client = createClerkSupabaseClient();
-      const { data, error } = await client
-        .from('memos')
-        .select('user_id, title, subtitle, url, content, tags, category, updated_at')
-        .eq('id', id)
-        .eq('publish', true)
-        .single();
+      
+      // メモとコメントを並列で取得
+      const [memoResult, commentsResult] = await Promise.all([
+        client
+          .from('memos')
+          .select('user_id, title, subtitle, url, content, tags, category, updated_at')
+          .eq('id', id)
+          .eq('publish', true)
+          .single(),
+        client
+          .from('comments')
+          .select('unique_id, user_id, content, created_at, updated_at')
+          .eq('id', id)
+          .order('created_at', { ascending: true })
+      ]);
 
-      if (error) {
-        console.error('Error loading memo:', error);
+      // メモデータの処理
+      if (memoResult.error) {
+        console.error('Error loading memo:', memoResult.error);
       } else {
-        setMemo(data);
+        setMemo(memoResult.data);
+      }
+
+      // コメントデータの処理
+      if (commentsResult.error) {
+        console.error('Error loading comments:', commentsResult.error);
+      } else {
+        setComments(commentsResult.data);
+      }
+
+      // 全ユーザーIDを収集（メモ作成者 + コメント投稿者）
+      const allUserIds = new Set<string>();
+      if (memoResult.data?.user_id) {
+        allUserIds.add(memoResult.data.user_id);
+      }
+      if (commentsResult.data) {
+        commentsResult.data.forEach(comment => {
+          if (comment.user_id) allUserIds.add(comment.user_id);
+        });
+      }
+
+      // プロファイル情報を一括取得
+      if (allUserIds.size > 0) {
+        const { data: profiles, error: profileError } = await client
+          .from('profiles')
+          .select('user_id, atcoder_username')
+          .in('user_id', Array.from(allUserIds));
         
-        // ユーザー名を取得
-        if (data?.user_id) {
-          const { data: profile, error: profileError } = await client
-            .from('profiles')
-            .select('atcoder_username')
-            .eq('user_id', data.user_id)
-            .single();
+        if (!profileError && profiles) {
+          const nameMap: Record<string, string> = {};
+          profiles.forEach(profile => {
+            nameMap[profile.user_id] = profile.atcoder_username || 'Unknown';
+          });
+          setUserNames(nameMap);
           
-          if (!profileError && profile) {
-            setUserName(profile.atcoder_username || 'Unknown');
+          // メモ作成者の名前を設定
+          if (memoResult.data?.user_id) {
+            setUserName(nameMap[memoResult.data.user_id] || 'Unknown');
           }
         }
       }
+
       setLoading(false);
     }
 
-    loadMemo();
-    loadComment();
+    loadMemoAndComments();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]); // Add id to dependencies
