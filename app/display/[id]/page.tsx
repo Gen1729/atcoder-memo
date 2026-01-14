@@ -51,8 +51,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [isEditPreview, setIsEditPreview] = useState<boolean>(false);
-
-  // Unwrap params
+  
   useEffect(() => {
     params.then((p) => setId(p.id));
   }, [params]);
