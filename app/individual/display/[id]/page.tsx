@@ -230,7 +230,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <div className="flex-1 flex flex-col min-h-0 mb-1">
               <label className="block text-base font-semibold text-gray-700 mb-2">Content</label>
               <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[490px]">
-                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} 
+                  rehypePlugins={[rehypeKatex]}
+                  components={{
+                    a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                  }}
+                >
                   {memo.content || "*Nothing to preview*"}
                 </ReactMarkdown>
               </div>

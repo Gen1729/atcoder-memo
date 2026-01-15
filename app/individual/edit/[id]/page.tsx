@@ -371,7 +371,13 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                 </div>
                 {isPreview ? (
                   <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[325px]">
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} 
+                      rehypePlugins={[rehypeKatex]}
+                      components={{
+                        a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                      }}
+                    >
                       {content || "*Nothing to preview*"}
                     </ReactMarkdown>
                   </div>
