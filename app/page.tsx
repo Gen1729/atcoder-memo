@@ -1,47 +1,43 @@
 'use client'
 import { Suspense, useEffect, useState, useMemo } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useDebouncedCallback } from 'use-debounce';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-interface Category {
-  all: number;
-  algorithm: number;
-  dataStructure: number;
-  math: number;
-  others: number;
+interface Profile {
+  atcoder_username: string;
 }
 
 interface Memo {
-  id: number;
+  id: string;
   user_id: string;
   title: string;
   subtitle?: string;
   tags?: string;
   category: string;
   created_at?: string;
+  profiles: Profile | Profile[] | null;
 }
 
 function GlobalMemosPage() {
   const router = useRouter();
-  const pathname = usePathname();
+  // const pathname = usePathname();
   const searchParams = useSearchParams();
   
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [category,setCategory] = useState<string>("all");
-  const [categoryNum,setCategoryNum] = useState<Category>();
-  const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [memoType, setMemoType] = useState<"all" | "memo" | "question">("all");
+  const [memoType, setMemoType] = useState<"memo" | "question">("memo");
   
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
   const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
   const [nameQuery, setNameQuery] = useState<string>(searchParams.get('name') || '');
   
-  // ページネーション用のstate
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const ITEMS_PER_PAGE = 9; // 3x3のグリッド
+  // 無限スクロール用のstate
+  const [page, setPage] = useState<number>(0); // 現在のページ番号
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const ITEMS_PER_PAGE = 9;
 
   // ソート順のstate (true: 降順, false: 昇順)
   const [isDescending, setIsDescending] = useState<boolean>(true);
@@ -52,93 +48,33 @@ function GlobalMemosPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // useMemoでフィルタリングされたメモを計算
-  const filteredMemos = useMemo(() => {
-    const filtered =  memos.filter((memo) => {
-      // カテゴリーフィルタ
-      const categoryMatch = category === "all" || memo.category === category;
-      
-      // タイトル検索フィルタ（部分一致、大文字小文字区別なし）
-      const searchMatch = !searchQuery || 
-        memo.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (memo.subtitle && memo.subtitle.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      // タグ検索フィルタ（複数タグ対応、1つでも一致すればtrue）
-      const tagMatch = !tagQuery || 
-        (() => {
-          if (!memo.tags) return false;
-          
-          // 検索タグをスペースで分割して配列にする
-          const searchTags = tagQuery.toLowerCase().split(' ').filter(tag => tag.trim());
-          const memoTagsLower = memo.tags.toLowerCase();
-          
-          // 検索タグのいずれか1つでもメモのタグに含まれていればtrue
-          return searchTags.some(searchTag => memoTagsLower.includes(searchTag));
-        })();
+  // 初回ロードとカテゴリ・ソート順変更時
+  useEffect(() => {
+    setMemos([]);
+    setPage(0);
+    setHasMore(true);
+    loadMemos(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDescending, category]);
 
-      const nameMatch = !nameQuery || 
-        (userNames[memo.user_id] && userNames[memo.user_id] != "Unknown" && userNames[memo.user_id].toLowerCase().includes(nameQuery.toLowerCase()));
-      
-      return categoryMatch && searchMatch && tagMatch && nameMatch;
-    });
-
-    // created_atでソート
-    return filtered.sort((a, b) => {
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return isDescending ? dateB - dateA : dateA - dateB;
-    });
-  }, [memos, searchQuery, tagQuery, nameQuery, userNames, category, isDescending]);
-
-  // 総ページ数を計算
-  const totalPage = useMemo(() => {
-    return Math.ceil(filteredMemos.length / ITEMS_PER_PAGE);
-  }, [filteredMemos.length, ITEMS_PER_PAGE]);
-
-  // デバウンス処理付きURL更新関数（300ms遅延）
-  const updateSearchParams = useDebouncedCallback((search: string, tag: string, name: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    // 検索クエリが空でない場合はパラメータに追加、空なら削除
-    if (search) {
-      params.set('search', search);
-    } else {
-      params.delete('search');
+  // 「もっと読み込む」ボタンのハンドラ
+  const handleLoadMore = () => {
+    if (!loading && !loadingMore && hasMore) {
+      loadMemos(page + 1, false);
     }
-    
-    if (tag) {
-      params.set('tag', tag);
-    } else {
-      params.delete('tag');
-    }
-
-    if (name) {
-      params.set('name', name);
-    } else {
-      params.delete('name');
-    }
-    
-    // URLを更新（ページリロードなし）
-    router.push(`${pathname}?${params.toString()}`);
-  }, 300);
+  };
 
   // 検索入力時のハンドラ
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    updateSearchParams(value, tagQuery, nameQuery);
-    setCurrentPage(1); // 検索時は1ページ目に戻る
   };
 
   const handleTagChange = (value: string) => {
     setTagQuery(value);
-    updateSearchParams(searchQuery, value, nameQuery);
-    setCurrentPage(1); // タグ検索時は1ページ目に戻る
   };
 
   const handleNameChange = (value: string) => {
     setNameQuery(value);
-    updateSearchParams(searchQuery, tagQuery, value);
-    setCurrentPage(1); // 名前検索時は1ページ目に戻る
   };
 
   // Category color mapping
@@ -153,67 +89,79 @@ function GlobalMemosPage() {
     return colors[category] || 'bg-gray-500';
   };
 
-  useEffect(() => {
-    async function loadMemos() {
+  async function loadMemos(pageNum: number, isInitial: boolean) {
+    if (isInitial) {
       setLoading(true);
-      
-      // Fetch only public memos
-      const { data, error } = await client
-        .from('memos')
-        .select('id, user_id, title, subtitle, tags, category, created_at')
-        .eq('publish', true);
-      
-      if (error) {
-        console.error('Error loading memo:', error);
-      }else{
-        setMemos(data);
-        
-        // ユニークなuser_idを抽出
-        const uniqueUserIds = [...new Set(data.map(memo => memo.user_id))].filter(Boolean);
-        
-        if (uniqueUserIds.length > 0) {
-          // プロファイル情報を一括取得
-          const { data: profiles, error: profileError } = await client
-            .from('profiles')
-            .select('user_id, atcoder_username')
-            .in('user_id', uniqueUserIds);
-          
-          if (!profileError && profiles) {
-            // user_id → atcoder_usernameのマップを作成
-            const nameMap: Record<string, string> = {};
-            profiles.forEach(profile => {
-              nameMap[profile.user_id] = profile.atcoder_username || 'Unknown';
-            });
-            setUserNames(nameMap);
-          }
-        }
-      }
-        
-      const categoryCount: Category = 
-      {
-        all: 0,
-        algorithm: 0,
-        dataStructure: 0,
-        math: 0,
-        others: 0
-      };
+    } else {
+      setLoadingMore(true);
+    }
+    
+    // rangeの開始と終了を計算
+    const from = pageNum * ITEMS_PER_PAGE;
+    const to = from + ITEMS_PER_PAGE - 1;
+    
+    // Fetch only public memos
+    let query = client
+      .from('memos')
+      .select('id, user_id, title, subtitle, tags, category, created_at, profiles(atcoder_username)')
+      .eq('publish', true);
 
-      if(data){
-        data.forEach((c) => {
-          const cat = c.category as keyof Category;
-          if (cat in categoryCount) {
-            categoryCount[cat]++;
-          }
-        });
-        categoryCount.all = data.length;
-      }
-
-      setCategoryNum(categoryCount);
-      setLoading(false);
+    //category絞り込み
+    if (category != 'all') {
+      query = query.eq('category',category);
     }
 
-    loadMemos();
-  }, [])
+    // searchQueryがある場合
+    if (searchQuery && searchQuery.trim()) {
+      query = query.or(`title.ilike.%${searchQuery}%,subtitle.ilike.%${searchQuery}%`);
+    }
+
+    // tagQueryがある場合
+    if (tagQuery && tagQuery.trim()) {
+      const tags = tagQuery.split(' ').filter(tag => tag.trim());
+      if (tags.length > 0) {
+        const tagConditions = tags.map(tag => `tags.ilike.%${tag}%`).join(',');
+        query = query.or(tagConditions);
+      }
+    }
+
+    // nameQueryがある場合
+    if (nameQuery && nameQuery.trim()) {
+      // profilesとのinner joinで名前フィルタ
+      query = query
+        .select('id, user_id, title, subtitle, tags, category, created_at, profiles!inner(atcoder_username)')
+        .ilike('profiles.atcoder_username', `%${nameQuery}%`);
+    }
+
+    query = query
+      .order('created_at', { ascending: !isDescending })
+      .range(from, to);
+
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error loading memo:', error);
+    } else {
+      if (data && data.length > 0) {
+        if (isInitial) {
+          setMemos(data);
+        } else {
+          setMemos(prev => [...prev, ...data]);
+        }
+        setPage(pageNum);
+        
+        // 取得したデータが9個未満なら、もうデータがない
+        if (data.length < ITEMS_PER_PAGE) {
+          setHasMore(false);
+        }
+      } else {
+        setHasMore(false);
+      }
+    }
+      
+    setLoading(false);
+    setLoadingMore(false);
+  }
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-gray-50">
@@ -265,7 +213,7 @@ function GlobalMemosPage() {
               />
             </svg>
           </div>
-          <div className="relative">
+          <div className="relative mb-3">
             <input
               type="text"
               placeholder="Filter by Atcoder Name"
@@ -287,23 +235,38 @@ function GlobalMemosPage() {
               />
             </svg>
           </div>
+          <button
+            className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
+            onClick={() => {
+              setMemos([]);
+              setPage(0);
+              setHasMore(true);
+              loadMemos(0, true);
+            }}
+          >
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            Search
+          </button>
         </div>
 
         {/* Menu Section */}
         <nav className="flex-1 pl-4 pr-4 pb-4 pt-6 overflow-y-auto">
           <div className="space-y-1">
             <button 
-              className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "all" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
-              onClick={() => {setMemoType("all"); setCurrentPage(1);}}
-            >
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              All
-            </button>
-            <button 
               className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "memo" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
-              onClick={() => {setMemoType("memo"); setCurrentPage(1);}}
+              onClick={() => {setMemoType("memo");}}
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -312,7 +275,7 @@ function GlobalMemosPage() {
             </button>
             <button
               className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "question" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
-              onClick={() => {setMemoType("question"); setCurrentPage(1);}}
+              onClick={() => {setMemoType("question");}}
             >
               <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -326,17 +289,16 @@ function GlobalMemosPage() {
               category
             </h3>
             <div className="space-y-1">
-              {categoryNum && Object.keys(categoryNum).map((key) => (
+              {['all','algorithm','dataStructure','math','others'].map((key) => (
                 <button 
                   key={key}
                   className={`w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 ${key==category ? "bg-blue-100" : "hover:bg-gray-100"} rounded-lg transition-colors`}
-                  onClick={() => {setCategory(key); setCurrentPage(1);}}
+                  onClick={() => setCategory(key)}
                 >
                   <div className="flex gap-3">
                     <div className={`w-3 h-3 rounded-full ${getCategoryColor(key)} flex-shrink-0 ml-2 mt-1.5`}/>
                     <span>{key}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{categoryNum[key as keyof Category] || 0}</span>
                 </button>
               ))}
             </div>
@@ -358,24 +320,34 @@ function GlobalMemosPage() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+        <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Global Memo</h1>
-            <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0} memos</p>
           </div>
+          
+          {/* ソート順トグル */}
+          <button
+            onClick={() => setIsDescending(!isDescending)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            title={isDescending ? "Descending order（Newest）" : "Ascending order（Oldest）"}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isDescending ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              )}
+            </svg>
+            <span>{isDescending ? "Newest" : "Oldest"}</span>
+          </button>
         </header>
 
         {/* Memos Grid */}
-        <div className="flex-1 overflow-y-auto px-8 py-6 pb-24">
+        <div className="flex-1 overflow-y-auto px-8 py-6 min-h-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {!loading && (() => {
-              const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-              const endIndex = startIndex + ITEMS_PER_PAGE;
-              const paginatedMemos = filteredMemos.slice(startIndex, endIndex);
-              
-              return paginatedMemos.map((memo) => (
+            {memos.map((memo) => (
                 <div
                   key={memo.id}
                   className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-lg transition-shadow cursor-pointer min-h-[180px] flex flex-col"
@@ -416,16 +388,20 @@ function GlobalMemosPage() {
                   </div>
                   
                   {/* ユーザー名表示 */}
-                  {memo.user_id && (
-                    <div className="mt-auto pt-3 border-t border-gray-100">
-                      <p className="text-sm text-gray-500 truncate">
-                        by <span className="font-sm text-gray-700">{userNames[memo.user_id] || 'Loading...'}</span>
-                      </p>
-                    </div>
-                  )}
+                  {(() => {
+                    const username = Array.isArray(memo.profiles) 
+                    ? memo.profiles[0]?.atcoder_username 
+                    : memo.profiles?.atcoder_username;
+                    return(
+                      <div className="mt-auto pt-3 border-t border-gray-100">
+                        <p className="text-sm text-gray-500 truncate">
+                          by <span className="font-sm text-gray-700">{username || 'Unknown'}</span>
+                        </p>
+                      </div>
+                    )}
+                  )()}
                 </div>
-              ));
-            })()}
+              ))}
           </div>
 
           {loading && (
@@ -434,7 +410,7 @@ function GlobalMemosPage() {
             </div>
           )}
 
-          {!loading && filteredMemos.length === 0 && (
+          {!loading && memos.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64">
               <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -443,70 +419,35 @@ function GlobalMemosPage() {
               <p className="text-gray-400 text-sm mt-2">Please try another pattern</p>
             </div>
           )}
-        </div>
-
-        {/* ページネーションコントロール - 画面下部に固定 */}
-        {!loading && totalPage > 0 && (
-          <div className="fixed bottom-0 left-80 right-0 bg-white border-t border-gray-200 py-4 px-8 shadow-lg">
-            <div className="flex items-center justify-between">
-              {/* ソート順トグル - 左端 */}
+          
+          {/* もっと読み込むボタン */}
+          {!loading && memos.length > 0 && hasMore && (
+            <div className="flex items-center justify-center py-8">
               <button
-                onClick={() => setIsDescending(!isDescending)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-27"
-                title={isDescending ? "Descending order（Newest）" : "Ascending order（Oldest）"}
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-6 py-2 mt-4 bg-blue-600 text-xs text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {isDescending ? (
-                    // 降順アイコン（下向き矢印）
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  ) : (
-                    // 昇順アイコン（上向き矢印）
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                  )}
-                </svg>
-                <span>{isDescending ? "Newest" : "Oldest"}</span>
+                {loadingMore ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    <span>more Load</span>
+                  </>
+                )}
               </button>
-              
-              {/* ページネーション - 中央 */}
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  前へ
-                </button>
-                
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: totalPage }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPage, prev + 1))}
-                  disabled={currentPage === totalPage}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  次へ
-                </button>
-              </div>
-              
-              {/* 右側の空白 - レイアウトバランス用 */}
-              <div className="w-[120px]"></div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   )
