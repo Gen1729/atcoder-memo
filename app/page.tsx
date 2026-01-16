@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState, useMemo } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation';
 

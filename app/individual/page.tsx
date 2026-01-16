@@ -23,6 +23,7 @@ function IndividualPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [category, setCategory] = useState<string>("all");
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
+  const [totalMemoCount,setTotalMemoCount] = useState<number>(0);
   const { user } = useUser();
   const { session } = useSession();
   
@@ -103,6 +104,11 @@ function IndividualPage() {
     // rangeの開始と終了を計算
     const from = pageNum * ITEMS_PER_PAGE;
     const to = from + ITEMS_PER_PAGE - 1;
+
+    let countQuery = client
+      .from('memos')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user!.id);
     
     // user_idでフィルタリング
     let query = client
@@ -113,16 +119,19 @@ function IndividualPage() {
     // favoriteフィルタ
     if (isFavorite) {
       query = query.eq('favorite', true);
+      countQuery = countQuery.eq('favorite', true);
     }
 
     // categoryフィルタ
     if (category != 'all') {
       query = query.eq('category', category);
+      countQuery = countQuery.eq('category', category);
     }
 
     // searchQueryがある場合
     if (searchQuery && searchQuery.trim()) {
       query = query.or(`title.ilike.%${searchQuery}%,subtitle.ilike.%${searchQuery}%`);
+      countQuery = countQuery.or(`title.ilike.%${searchQuery}%,subtitle.ilike.%${searchQuery}%`);
     }
 
     // tagQueryがある場合
@@ -131,6 +140,7 @@ function IndividualPage() {
       if (tags.length > 0) {
         const tagConditions = tags.map(tag => `tags.ilike.%${tag}%`).join(',');
         query = query.or(tagConditions);
+        countQuery = countQuery.or(tagConditions);
       }
     }
 
@@ -138,21 +148,25 @@ function IndividualPage() {
       .order('created_at', { ascending: !isDescending })
       .range(from, to);
 
-    const { data, error } = await query;
+    const [partMemos, totalCount] = await Promise.all([
+      query,
+      countQuery
+    ]);
     
-    if (error) {
-      console.error('Error loading memo:', error);
+    if (partMemos.error || totalCount.error) {
+      console.error('Error loading memo:', partMemos.error);
     } else {
-      if (data && data.length > 0) {
+      setTotalMemoCount(totalCount.count || 0);
+      if (partMemos.data && partMemos.data.length > 0) {
         if (isInitial) {
-          setMemos(data);
+          setMemos(partMemos.data);
         } else {
-          setMemos(prev => [...prev, ...data]);
+          setMemos(prev => [...prev, ...partMemos.data]);
         }
         setPage(pageNum);
         
         // 取得したデータが9個未満なら、もうデータがない
-        if (data.length < ITEMS_PER_PAGE) {
+        if (partMemos.data.length < ITEMS_PER_PAGE) {
           setHasMore(false);
         }
       } else {
@@ -314,7 +328,7 @@ function IndividualPage() {
         <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Memo</h1>
-            {/* <p className="text-sm text-gray-500 mt-1">{categoryNum?.all || 0} memos</p> */}
+            <p className="text-sm text-gray-500 mt-1">{totalMemoCount || 0} memos</p>
           </div>
           
           <div className="flex items-center gap-4">
