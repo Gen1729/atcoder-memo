@@ -354,7 +354,7 @@ function GlobalMemosPage() {
                   onClick={() => {router.push(`/display/${memo.id}`)}}
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <h2 className="text-xl font-bold text-gray-900 flex-1 truncate" title={memo.title}>
+                    <h2 className="text-base my-[2px] font-bold text-gray-900 flex-1 truncate" title={memo.title}>
                       {memo.title}
                     </h2>
                     {memo.category && (
