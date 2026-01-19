@@ -203,7 +203,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     isSavingRef.current = true;
     setLoading(true);
 
-    const fixedTags = tags.split(' ').filter(tag => tag.trim());
+    const fixedTags = tags.replace('　',' ').split(' ').filter(tag => tag.trim());
     const uniqueFixedTags = [...new Set(fixedTags)].join(" ");
 
     const { error } = await client
