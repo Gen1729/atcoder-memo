@@ -26,7 +26,7 @@ function GlobalMemosPage() {
   const [memos, setMemos] = useState<Memo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [category,setCategory] = useState<string>("all");
-  const [memoType, setMemoType] = useState<"memo" | "question">("memo");
+  // const [memoType, setMemoType] = useState<"memo" | "question">("memo");
   
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
@@ -263,7 +263,7 @@ function GlobalMemosPage() {
 
         {/* Menu Section */}
         <nav className="flex-1 pl-4 pr-4 pb-4 pt-6 overflow-y-auto">
-          <div className="space-y-1">
+          {/* <div className="space-y-1">
             <button 
               className={`w-full flex items-center px-4 py-2.5 text-sm font-medium ${memoType == "memo" ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100 text-gray-700"} rounded-lg transition-colors`}
               onClick={() => {setMemoType("memo");}}
@@ -282,9 +282,9 @@ function GlobalMemosPage() {
               </svg>
               Question
             </button>
-          </div>
+          </div> */}
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          <div>
             <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               category
             </h3>
