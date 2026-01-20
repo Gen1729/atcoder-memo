@@ -1,7 +1,7 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image';
 
 interface Profile {
@@ -400,16 +400,16 @@ function GlobalMemosPage() {
                       <div className="mt-auto pt-3 border-t border-gray-100">
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-gray-500">by</span>
+                          <span className="text-sm text-gray-700 truncate">{username || 'Unknown'}</span>
                           {icon && (
                             <Image 
                               src={icon} 
                               alt={username || 'User'}
                               width={24}
                               height={24}
-                              className="w-6 h-6 rounded-full object-cover"
+                              className="rounded-full object-cover"
                             />
                           )}
-                          <span className="text-sm text-gray-700 truncate">{username || 'Unknown'}</span>
                         </div>
                       </div>
                     )}
