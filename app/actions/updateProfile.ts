@@ -28,6 +28,7 @@ export const updateProfile = async (formData: FormData) => {
 
     const user = await client.users.getUser(userId);
     const email = user.emailAddresses[0]?.emailAddress;
+    const imageUrl = user.imageUrl;
 
     if(!email){
       return { error : "User Email not found"}
@@ -44,6 +45,7 @@ export const updateProfile = async (formData: FormData) => {
       .upsert({
         user_id: userId,
         email: email,
+        icon: imageUrl,
         atcoder_username: atcoderUsername ? String(atcoderUsername) : null,
         favorite_language: favoriteLanguage ? String(favoriteLanguage) : null,
         atcoder_rate: atcoderRate ? Number(atcoderRate) : null,

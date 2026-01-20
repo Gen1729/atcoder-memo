@@ -105,32 +105,41 @@ export async function POST(req: Request) {
       break
 
     case 'user.updated':
-      // ユーザー情報更新時の処理（メールアドレス変更を含む）
+      // ユーザー情報更新時の処理（メールアドレスとプロフィール画像の変更を含む）
       const updatedUserId = evt.data.id
       const primaryEmail = evt.data.email_addresses.find(
         (email) => email.id === evt.data.primary_email_address_id
       )
+      const imageUrl = evt.data.image_url
 
-      if (primaryEmail) {
-        console.log(`User updated: ${updatedUserId}, new email: ${primaryEmail.email_address}`)
+      if (primaryEmail || imageUrl) {
+        console.log(`User updated: ${updatedUserId}, new email: ${primaryEmail?.email_address}, image: ${imageUrl}`)
 
         try {
-          // profilesテーブルのメールアドレスを更新
+          // profilesテーブルのメールアドレスとプロフィール画像を更新
+          const updateData: { email?: string; icon?: string } = {}
+          
+          if (primaryEmail) {
+            updateData.email = primaryEmail.email_address
+          }
+          
+          if (imageUrl) {
+            updateData.icon = imageUrl
+          }
+
           const { error: updateError } = await supabase
             .from('profiles')
-            .update({
-              email: primaryEmail.email_address,
-            })
+            .update(updateData)
             .eq('user_id', updatedUserId)
 
           if (updateError) {
-            console.error('Error updating profile email:', updateError)
-            return new Response('Error: Failed to update email', {
+            console.error('Error updating profile:', updateError)
+            return new Response('Error: Failed to update profile', {
               status: 500,
             })
           }
 
-          console.log(`Successfully updated email for user: ${updatedUserId}`)
+          console.log(`Successfully updated profile for user: ${updatedUserId}`)
         } catch (error) {
           console.error('Error in user update process:', error)
           return new Response('Error: Failed to update user data', {
@@ -138,7 +147,7 @@ export async function POST(req: Request) {
           })
         }
       } else {
-        console.log(`No primary email found for user: ${updatedUserId}`)
+        console.log(`No primary email or image found for user: ${updatedUserId}`)
       }
       break
 

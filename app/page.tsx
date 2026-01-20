@@ -2,9 +2,11 @@
 import { Suspense, useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 interface Profile {
   atcoder_username: string;
+  icon?: string;
 }
 
 interface Memo {
@@ -103,7 +105,7 @@ function GlobalMemosPage() {
     // Fetch only public memos
     let query = client
       .from('memos')
-      .select('id, user_id, title, subtitle, tags, category, created_at, profiles(atcoder_username)')
+      .select('id, user_id, title, subtitle, tags, category, created_at, profiles(atcoder_username, icon)')
       .eq('publish', true);
 
     //category絞り込み
@@ -129,7 +131,7 @@ function GlobalMemosPage() {
     if (nameQuery && nameQuery.trim()) {
       // profilesとのinner joinで名前フィルタ
       query = query
-        .select('id, user_id, title, subtitle, tags, category, created_at, profiles!inner(atcoder_username)')
+        .select('id, user_id, title, subtitle, tags, category, created_at, profiles!inner(atcoder_username, icon)')
         .ilike('profiles.atcoder_username', `%${nameQuery}%`);
     }
 
@@ -389,14 +391,26 @@ function GlobalMemosPage() {
                   
                   {/* ユーザー名表示 */}
                   {(() => {
-                    const username = Array.isArray(memo.profiles) 
-                    ? memo.profiles[0]?.atcoder_username 
-                    : memo.profiles?.atcoder_username;
+                    const profile = Array.isArray(memo.profiles) 
+                    ? memo.profiles[0] 
+                    : memo.profiles;
+                    const username = profile?.atcoder_username;
+                    const icon = profile?.icon;
                     return(
                       <div className="mt-auto pt-3 border-t border-gray-100">
-                        <p className="text-sm text-gray-500 truncate">
-                          by <span className="font-sm text-gray-700">{username || 'Unknown'}</span>
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">by</span>
+                          {icon && (
+                            <Image 
+                              src={icon} 
+                              alt={username || 'User'}
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 rounded-full object-cover"
+                            />
+                          )}
+                          <span className="text-sm text-gray-700 truncate">{username || 'Unknown'}</span>
+                        </div>
                       </div>
                     )}
                   )()}
