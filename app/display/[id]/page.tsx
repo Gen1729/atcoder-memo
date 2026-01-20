@@ -519,10 +519,10 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                           <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id].atcoder_username}</span>
-                              {createUserName?.icon && (
+                              {userNames[comment.user_id]?.icon && (
                                 <Image 
-                                  src={createUserName?.icon} 
-                                  alt={createUserName?.atcoder_username || 'User'}
+                                  src={userNames[comment.user_id].icon || ''}
+                                  alt={userNames[comment.user_id].atcoder_username || 'User'}
                                   width={24}
                                   height={24}
                                   className="rounded-full object-cover"
