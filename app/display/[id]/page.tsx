@@ -3,6 +3,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image';
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -32,11 +33,16 @@ interface Comment {
   updated_at?: string;
 }
 
+interface Profile {
+  atcoder_username: string;
+  icon?: string;
+}
+
 function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string>('');
-  const [userName, setUserName] = useState<string>('');
+  const [createUserName, setCreateUserName] = useState<Profile>();
   const router = useRouter();
   const { user } = useUser();
   const { session } = useSession();
@@ -45,7 +51,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>('');
   const [isCommentPreview, setIsCommentPreview] = useState<boolean>(false);
-  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [userNames, setUserNames] = useState<Record<string, Profile>>({});
   
   // コメント編集用のstate
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -162,14 +168,14 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
         // プロファイル情報を一括取得
         const { data: profiles, error: profileError } = await client
           .from('profiles')
-          .select('user_id, atcoder_username')
+          .select('user_id, atcoder_username, icon')
           .in('user_id', uniqueUserIds);
         
         if (!profileError && profiles) {
           // user_id → atcoder_usernameのマップを作成
-          const nameMap: Record<string, string> = { ...userNames };
+          const nameMap: Record<string, Profile> = { ...userNames };
           profiles.forEach(profile => {
-            nameMap[profile.user_id] = profile.atcoder_username || 'Unknown';
+            nameMap[profile.user_id] = {atcoder_username: profile.atcoder_username || 'Unknown', icon: profile.icon};
           });
           setUserNames(nameMap);
         }
@@ -228,19 +234,19 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       if (allUserIds.size > 0) {
         const { data: profiles, error: profileError } = await client
           .from('profiles')
-          .select('user_id, atcoder_username')
+          .select('user_id, atcoder_username, icon')
           .in('user_id', Array.from(allUserIds));
         
         if (!profileError && profiles) {
-          const nameMap: Record<string, string> = {};
+          const nameMap: Record<string, Profile> = {};
           profiles.forEach(profile => {
-            nameMap[profile.user_id] = profile.atcoder_username || 'Unknown';
+            nameMap[profile.user_id] = {atcoder_username: profile.atcoder_username || 'Unknown', icon: profile.icon};
           });
           setUserNames(nameMap);
           
           // メモ作成者の名前を設定
           if (memoResult.data?.user_id) {
-            setUserName(nameMap[memoResult.data.user_id] || 'Unknown');
+            setCreateUserName({atcoder_username: nameMap[memoResult.data.user_id].atcoder_username || 'Unknown', icon: nameMap[memoResult.data.user_id].icon});
           }
         }
       }
@@ -310,8 +316,17 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
               </div>
               <div className="flex-shrink-0">
                 {memo.user_id && (
-                  <div className="text-sm text-gray-500">
-                    by <span className="font-medium text-gray-700">{userName || 'Loading...'}</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span>by</span><span className="font-medium text-gray-700">{createUserName?.atcoder_username || 'Unknown'}</span>
+                      {createUserName?.icon && (
+                        <Image 
+                          src={createUserName?.icon} 
+                          alt={createUserName?.atcoder_username || 'User'}
+                          width={24}
+                          height={24}
+                          className="rounded-full object-cover"
+                        />
+                      )}
                   </div>
                 )}
               </div>
@@ -421,7 +436,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                         <>
                           <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id]}</span>
+                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id].atcoder_username}</span>
                               <span className="text-sm text-gray-600">Editing...</span>
                             </div>
                             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
@@ -503,7 +518,16 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                         <>
                           <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id]}</span>
+                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id].atcoder_username}</span>
+                              {createUserName?.icon && (
+                                <Image 
+                                  src={createUserName?.icon} 
+                                  alt={createUserName?.atcoder_username || 'User'}
+                                  width={24}
+                                  height={24}
+                                  className="rounded-full object-cover"
+                                />
+                              )}
                               {comment.created_at && (
                                 <span className="text-sm text-gray-600">
                                   {new Date(comment.created_at).toLocaleDateString('ja-JP', {
