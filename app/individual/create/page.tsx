@@ -175,6 +175,9 @@ export default function Create(){
     // 保存成功: sessionStorageの下書きを削除
     const draftKey = 'memo-draft-new';
     sessionStorage.removeItem(draftKey);
+
+    sessionStorage.removeItem('globalPageState');
+    sessionStorage.removeItem('individualPageState');
     
     // 変更フラグをリセット
     setHasChanges(false);

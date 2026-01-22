@@ -232,6 +232,9 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
     // 保存成功: sessionStorageの下書きを削除
     const draftKey = `memo-draft-${id}`;
     sessionStorage.removeItem(draftKey);
+
+    sessionStorage.removeItem('globalPageState');
+    sessionStorage.removeItem('individualPageState');
     
     // useRefを使用しているため、即座に遷移しても問題なし
     router.push(`/individual/display/${id}`);
