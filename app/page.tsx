@@ -36,7 +36,7 @@ function GlobalMemosPage() {
   const [nameQuery, setNameQuery] = useState<string>(searchParams.get('name') || '');
   
   // 無限スクロール用のstate
-  const [page, setPage] = useState<number>(0); // 現在のページ番号
+  const [lastCreatedAt, setLastCreatedAt] = useState<string | null>(null); // カーソル位置
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const ITEMS_PER_PAGE = 9;
@@ -53,16 +53,16 @@ function GlobalMemosPage() {
   // 初回ロードとカテゴリ・ソート順変更時
   useEffect(() => {
     setMemos([]);
-    setPage(0);
+    setLastCreatedAt(null);
     setHasMore(true);
-    loadMemos(0, true);
+    loadMemos(null, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDescending, category]);
 
   // 「もっと読み込む」ボタンのハンドラ
   const handleLoadMore = () => {
     if (!loading && !loadingMore && hasMore) {
-      loadMemos(page + 1, false);
+      loadMemos(lastCreatedAt, false);
     }
   };
 
@@ -91,21 +91,22 @@ function GlobalMemosPage() {
     return colors[category] || 'bg-gray-500';
   };
 
-  async function loadMemos(pageNum: number, isInitial: boolean) {
+  async function loadMemos(cursor: string | null, isInitial: boolean) {
     if (isInitial) {
       setLoading(true);
     } else {
       setLoadingMore(true);
     }
     
-    // rangeの開始と終了を計算
-    const from = pageNum * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
+    // nameQueryがある場合はinner join、ない場合は通常のjoin
+    const selectClause = nameQuery && nameQuery.trim()
+      ? 'id, user_id, title, subtitle, tags, category, created_at, profiles!inner(atcoder_username, icon)'
+      : 'id, user_id, title, subtitle, tags, category, created_at, profiles(atcoder_username, icon)';
     
     // Fetch only public memos
     let query = client
       .from('memos')
-      .select('id, user_id, title, subtitle, tags, category, created_at, profiles(atcoder_username, icon)')
+      .select(selectClause)
       .eq('publish', true);
 
     //category絞り込み
@@ -129,15 +130,21 @@ function GlobalMemosPage() {
 
     // nameQueryがある場合
     if (nameQuery && nameQuery.trim()) {
-      // profilesとのinner joinで名前フィルタ
-      query = query
-        .select('id, user_id, title, subtitle, tags, category, created_at, profiles!inner(atcoder_username, icon)')
-        .ilike('profiles.atcoder_username', `%${nameQuery}%`);
+      query = query.ilike('profiles.atcoder_username', `%${nameQuery}%`);
+    }
+
+    // カーソルベースのページネーション
+    if (cursor) {
+      if (isDescending) {
+        query = query.lt('created_at', cursor);
+      } else {
+        query = query.gt('created_at', cursor);
+      }
     }
 
     query = query
       .order('created_at', { ascending: !isDescending })
-      .range(from, to);
+      .limit(ITEMS_PER_PAGE);
 
     const { data, error } = await query;
     
@@ -150,9 +157,11 @@ function GlobalMemosPage() {
         } else {
           setMemos(prev => [...prev, ...data]);
         }
-        setPage(pageNum);
         
-        // 取得したデータが9個未満なら、もうデータがない
+        // 最後のアイテムのcreated_atを保存
+        setLastCreatedAt(data[data.length - 1].created_at || null);
+        
+        // 取得したデータがITEMS_PER_PAGE未満なら、もうデータがない
         if (data.length < ITEMS_PER_PAGE) {
           setHasMore(false);
         }
@@ -241,9 +250,9 @@ function GlobalMemosPage() {
             className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
             onClick={() => {
               setMemos([]);
-              setPage(0);
+              setLastCreatedAt(null);
               setHasMore(true);
-              loadMemos(0, true);
+              loadMemos(null, true);
             }}
           >
             <svg

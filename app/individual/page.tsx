@@ -32,7 +32,7 @@ function IndividualPage() {
   const [tagQuery, setTagQuery] = useState<string>(searchParams.get('tag') || '');
   
   // 無限スクロール用のstate
-  const [page, setPage] = useState<number>(0); // 現在のページ番号
+  const [lastCreatedAt, setLastCreatedAt] = useState<string | null>(null); // カーソル位置
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const ITEMS_PER_PAGE = 9;
@@ -42,17 +42,19 @@ function IndividualPage() {
 
   // 初回ロードとカテゴリ・ソート順変更時
   useEffect(() => {
+    if (!user || !session) return;
+    
     setMemos([]);
-    setPage(0);
+    setLastCreatedAt(null);
     setHasMore(true);
-    loadMemos(0, true);
+    loadMemos(null, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDescending, category, isFavorite]);
+  }, [isDescending, category, isFavorite, user, session]);
 
   // 「もっと読み込む」ボタンのハンドラ
   const handleLoadMore = () => {
     if (!loading && !loadingMore && hasMore) {
-      loadMemos(page + 1, false);
+      loadMemos(lastCreatedAt, false);
     }
   };
 
@@ -92,7 +94,7 @@ function IndividualPage() {
 
   const client = createClerkSupabaseClient();
 
-  async function loadMemos(pageNum: number, isInitial: boolean) {
+  async function loadMemos(cursor: string | null, isInitial: boolean) {
     if (!user || !session) return;
     
     if (isInitial) {
@@ -100,10 +102,6 @@ function IndividualPage() {
     } else {
       setLoadingMore(true);
     }
-    
-    // rangeの開始と終了を計算
-    const from = pageNum * ITEMS_PER_PAGE;
-    const to = from + ITEMS_PER_PAGE - 1;
 
     let countQuery = client
       .from('memos')
@@ -144,9 +142,18 @@ function IndividualPage() {
       }
     }
 
+    // カーソルベースのページネーション
+    if (cursor) {
+      if (isDescending) {
+        query = query.lt('created_at', cursor);
+      } else {
+        query = query.gt('created_at', cursor);
+      }
+    }
+
     query = query
       .order('created_at', { ascending: !isDescending })
-      .range(from, to);
+      .limit(ITEMS_PER_PAGE);
 
     const [partMemos, totalCount] = await Promise.all([
       query,
@@ -163,9 +170,11 @@ function IndividualPage() {
         } else {
           setMemos(prev => [...prev, ...partMemos.data]);
         }
-        setPage(pageNum);
         
-        // 取得したデータが9個未満なら、もうデータがない
+        // 最後のアイテムのcreated_atを保存
+        setLastCreatedAt(partMemos.data[partMemos.data.length - 1].created_at || null);
+        
+        // 取得したデータがITEMS_PER_PAGE未満なら、もうデータがない
         if (partMemos.data.length < ITEMS_PER_PAGE) {
           setHasMore(false);
         }
@@ -232,9 +241,9 @@ function IndividualPage() {
             className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center"
             onClick={() => {
               setMemos([]);
-              setPage(0);
+              setLastCreatedAt(null);
               setHasMore(true);
-              loadMemos(0, true);
+              loadMemos(null, true);
             }}
           >
             <svg
