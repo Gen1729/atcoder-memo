@@ -58,10 +58,25 @@ function GlobalMemosPage() {
     if (typeof window === 'undefined') return;
     
     const savedState = sessionStorage.getItem('globalPageState');
+
     if (savedState) {
       try {
         isRestoringRef.current = true; // 復元開始
         const state = JSON.parse(savedState);
+        const currentTime = Date.now();
+        const savedTime = state.timestamp || 0;
+        const oneMinute = 60 * 1000; // 1分（ミリ秒）
+        
+        // 1分以上経過していたらsessionStorageをクリアして再フェッチ
+        if (currentTime - savedTime > oneMinute) {
+          sessionStorage.removeItem('individualPageState');
+          setMemos([]);
+          setLastCreatedAt(null);
+          setHasMore(true);
+          loadMemos(null, true);
+          return;
+        }
+        
         setMemos(state.memos || []);
         setLastCreatedAt(state.lastCreatedAt || null);
         setCategory(state.category || 'all');
