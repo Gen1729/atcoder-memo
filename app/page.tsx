@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image';
@@ -50,8 +50,68 @@ function GlobalMemosPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  // 復元処理中かどうかを追跡するRef
+  const isRestoringRef = useRef<boolean>(false);
+
+  // sessionStorageから状態を復元
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const savedState = sessionStorage.getItem('globalPageState');
+    if (savedState) {
+      try {
+        isRestoringRef.current = true; // 復元開始
+        const state = JSON.parse(savedState);
+        setMemos(state.memos || []);
+        setLastCreatedAt(state.lastCreatedAt || null);
+        setCategory(state.category || 'all');
+        setIsDescending(state.isDescending !== undefined ? state.isDescending : true);
+        setHasMore(state.hasMore !== undefined ? state.hasMore : true);
+        setSearchQuery(state.searchQuery);
+        setTagQuery(state.tagQuery);
+        setNameQuery(state.nameQuery);
+        setLoading(false); // 復元したのでloadingを終了
+        
+        // 復元完了後、少し待ってからフラグを更新
+        setTimeout(() => {
+          isRestoringRef.current = false;
+        }, 100);
+      } catch (error) {
+        console.error('Failed to restore state:', error);
+        isRestoringRef.current = false;
+      }
+    }else{
+      setMemos([]);
+      setLastCreatedAt(null);
+      setHasMore(true);
+      loadMemos(null, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 状態が変わったらsessionStorageに保存
+  useEffect(() => {
+    if (typeof window === 'undefined' || loading) return;
+    
+    const stateToSave = {
+      memos,
+      lastCreatedAt,
+      category,
+      isDescending,
+      hasMore,
+      searchQuery,
+      tagQuery,
+      nameQuery,
+      timestamp: Date.now()
+    };
+    
+    sessionStorage.setItem('globalPageState', JSON.stringify(stateToSave));
+  }, [memos, lastCreatedAt, category, isDescending, hasMore, searchQuery, tagQuery, nameQuery, loading]);
+
   // 初回ロードとカテゴリ・ソート順変更時
   useEffect(() => {
+    if (loading || isRestoringRef.current) return;
+
     setMemos([]);
     setLastCreatedAt(null);
     setHasMore(true);
