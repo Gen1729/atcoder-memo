@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSession, useUser } from '@clerk/nextjs'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -39,17 +39,78 @@ function IndividualPage() {
   
   // ソート順のstate (true: 降順, false: 昇順)
   const [isDescending, setIsDescending] = useState<boolean>(true);
+  
+  // 復元処理中かどうかを追跡するRef
+  const isRestoringRef = useRef<boolean>(false);
+
+  // sessionStorageから状態を復元
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!user || !session) return;
+    
+    const savedState = sessionStorage.getItem('individualPageState');
+    if (savedState) {
+      try {
+        isRestoringRef.current = true; // 復元開始
+        const state = JSON.parse(savedState);
+        setMemos(state.memos || []);
+        setTotalMemoCount(state.totalCount || 0);
+        setLastCreatedAt(state.lastCreatedAt || null);
+        setCategory(state.category || 'all');
+        setIsFavorite(state.isFavorite || false);
+        setIsDescending(state.isDescending !== undefined ? state.isDescending : true);
+        setHasMore(state.hasMore !== undefined ? state.hasMore : true);
+        setSearchQuery(state.searchQuery);
+        setTagQuery(state.tagQuery);
+        setLoading(false); // 復元したのでloadingを終了
+        
+        // 復元完了後、少し待ってからフラグを更新
+        setTimeout(() => {
+          isRestoringRef.current = false;
+        }, 100);
+      } catch (error) {
+        console.error('Failed to restore state:', error);
+        isRestoringRef.current = false;
+      }
+    }else{
+      setMemos([]);
+      setLastCreatedAt(null);
+      setHasMore(true);
+      loadMemos(null, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, session]);
+
+  // 状態が変わったらsessionStorageに保存
+  useEffect(() => {
+    if (typeof window === 'undefined' || loading) return;
+    
+    const stateToSave = {
+      memos,
+      totalMemoCount,
+      lastCreatedAt,
+      category,
+      isFavorite,
+      isDescending,
+      hasMore,
+      searchQuery,
+      tagQuery,
+      timestamp: Date.now()
+    };
+    
+    sessionStorage.setItem('individualPageState', JSON.stringify(stateToSave));
+  }, [memos, totalMemoCount, lastCreatedAt, category, isFavorite, isDescending, hasMore, searchQuery, tagQuery, loading]);
 
   // 初回ロードとカテゴリ・ソート順変更時
   useEffect(() => {
-    if (!user || !session) return;
-    
+    if (!user || !session || loading || isRestoringRef.current) return;
+
     setMemos([]);
     setLastCreatedAt(null);
     setHasMore(true);
     loadMemos(null, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDescending, category, isFavorite, user, session]);
+  }, [isDescending, category, isFavorite]);
 
   // 「もっと読み込む」ボタンのハンドラ
   const handleLoadMore = () => {
