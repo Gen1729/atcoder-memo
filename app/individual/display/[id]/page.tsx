@@ -83,7 +83,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     if (savedState) {
       try {
         const state = JSON.parse(savedState);
-        setMemo(state);
+        setMemo(state.data);
         setLoading(false);
       } catch (error) {
         console.error('Failed to restore state:', error);
