@@ -160,6 +160,11 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     if (commentsResult.error) {
       console.error('Error loading comments:', commentsResult.error);
     } else {
+      sessionStorage.setItem(`global-memo-comment-${id}`, JSON.stringify({
+        memo: memo,
+        comments: commentsResult.data
+      }));
+
       setComments(commentsResult.data);
     }
   }
@@ -200,6 +205,14 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
         setComments(commentsResult.data);
       }
 
+      // Save to sessionStorage
+      if (typeof window !== 'undefined' && !memoResult.error && !commentsResult.error) {
+        sessionStorage.setItem(`global-memo-comment-${id}`, JSON.stringify({
+          memo: memoResult.data,
+          comments: commentsResult.data
+        }));
+      }
+
       setLoading(false);
     }
 
@@ -208,6 +221,16 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     if (savedState) {
       try {
         const state = JSON.parse(savedState);
+        const currentTime = Date.now();
+        const savedTime = state.timestamp || 0;
+        const waitTime = 5 * 60 * 1000; // 5分（ミリ秒）
+
+        if (currentTime - savedTime > waitTime) {
+          sessionStorage.removeItem(`global-memo-comment-${id}`);
+          loadMemoAndComments();
+          return;
+        }
+
         setMemo(state.memo);
         setComments(state.comments);
         setLoading(false);

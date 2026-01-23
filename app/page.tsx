@@ -65,10 +65,10 @@ function GlobalMemosPage() {
         const state = JSON.parse(savedState);
         const currentTime = Date.now();
         const savedTime = state.timestamp || 0;
-        const oneMinute = 5 * 60 * 1000; // 5分（ミリ秒）
+        const waitTime = 5 * 60 * 1000; // 5分（ミリ秒）
         
         // 1分以上経過していたらsessionStorageをクリアして再フェッチ
-        if (currentTime - savedTime > oneMinute) {
+        if (currentTime - savedTime > waitTime) {
           sessionStorage.removeItem('individualPageState');
           setMemos([]);
           setLastCreatedAt(null);
