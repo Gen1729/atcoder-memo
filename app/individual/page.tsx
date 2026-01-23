@@ -71,6 +71,11 @@ function IndividualPage() {
       } catch (error) {
         console.error('Failed to restore state:', error);
         isRestoringRef.current = false;
+        sessionStorage.removeItem('individualPageState');
+        setMemos([]);
+        setLastCreatedAt(null);
+        setHasMore(true);
+        loadMemos(null, true);
       }
     }else{
       setMemos([]);

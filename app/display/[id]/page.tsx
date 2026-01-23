@@ -14,6 +14,11 @@ import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
+interface Profile {
+  atcoder_username: string;
+  icon?: string;
+}
+
 interface Memo {
   user_id: string;
   title: string;
@@ -23,6 +28,7 @@ interface Memo {
   tags?: string;
   category: string;
   updated_at?: string;
+  profiles: Profile | Profile[] | null;
 }
 
 interface Comment {
@@ -31,18 +37,13 @@ interface Comment {
   content: string;
   created_at?: string;
   updated_at?: string;
-}
-
-interface Profile {
-  atcoder_username: string;
-  icon?: string;
+  profiles: Profile | Profile[] | null;
 }
 
 function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [loading, setLoading] = useState(true);
   const [id, setId] = useState<string>('');
-  const [createUserName, setCreateUserName] = useState<Profile>();
   const router = useRouter();
   const { user } = useUser();
   const { session } = useSession();
@@ -51,7 +52,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>('');
   const [isCommentPreview, setIsCommentPreview] = useState<boolean>(false);
-  const [userNames, setUserNames] = useState<Record<string, Profile>>({});
   
   // コメント編集用のstate
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -86,11 +86,12 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       return;
     }
 
-    const { error } = await client.from('comments').insert({
-      id: id, // メモのID
-      user_id: user.id, // 認証されたユーザーのID
-      content: newComment,
-    })
+    const { error } = await client
+      .from('comments').insert({
+        id: id, // メモのID
+        user_id: user.id, // 認証されたユーザーのID
+        content: newComment,
+      })
 
     if (error) {
       console.error('Error creating comment:', error);
@@ -151,7 +152,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
     const [commentsResult] = await Promise.all([
       client
         .from('comments')
-        .select('unique_id, user_id, content, created_at, updated_at')
+        .select('unique_id, user_id, content, created_at, updated_at, profiles(atcoder_username, icon)')
         .eq('id', id)
         .order('created_at', { ascending: true })
     ]);
@@ -160,26 +161,6 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       console.error('Error loading comments:', commentsResult.error);
     } else {
       setComments(commentsResult.data);
-
-      // ユニークなuser_idを抽出
-      const uniqueUserIds = [...new Set(commentsResult.data.map(comment => comment.user_id))].filter(Boolean);
-      
-      if (uniqueUserIds.length > 0) {
-        // プロファイル情報を一括取得
-        const { data: profiles, error: profileError } = await client
-          .from('profiles')
-          .select('user_id, atcoder_username, icon')
-          .in('user_id', uniqueUserIds);
-        
-        if (!profileError && profiles) {
-          // user_id → atcoder_usernameのマップを作成
-          const nameMap: Record<string, Profile> = { ...userNames };
-          profiles.forEach(profile => {
-            nameMap[profile.user_id] = {atcoder_username: profile.atcoder_username || 'Unknown', icon: profile.icon};
-          });
-          setUserNames(nameMap);
-        }
-      }
     }
   }
 
@@ -194,13 +175,13 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
       const [memoResult, commentsResult] = await Promise.all([
         client
           .from('memos')
-          .select('user_id, title, subtitle, url, content, tags, category, updated_at')
+          .select('user_id, title, subtitle, url, content, tags, category, updated_at, profiles(atcoder_username, icon)')
           .eq('id', id)
           .eq('publish', true)
           .single(),
         client
           .from('comments')
-          .select('unique_id, user_id, content, created_at, updated_at')
+          .select('unique_id, user_id, content, created_at, updated_at, profiles(atcoder_username, icon)')
           .eq('id', id)
           .order('created_at', { ascending: true })
       ]);
@@ -219,43 +200,25 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
         setComments(commentsResult.data);
       }
 
-      // 全ユーザーIDを収集（メモ作成者 + コメント投稿者）
-      const allUserIds = new Set<string>();
-      if (memoResult.data?.user_id) {
-        allUserIds.add(memoResult.data.user_id);
-      }
-      if (commentsResult.data) {
-        commentsResult.data.forEach(comment => {
-          if (comment.user_id) allUserIds.add(comment.user_id);
-        });
-      }
-
-      // プロファイル情報を一括取得
-      if (allUserIds.size > 0) {
-        const { data: profiles, error: profileError } = await client
-          .from('profiles')
-          .select('user_id, atcoder_username, icon')
-          .in('user_id', Array.from(allUserIds));
-        
-        if (!profileError && profiles) {
-          const nameMap: Record<string, Profile> = {};
-          profiles.forEach(profile => {
-            nameMap[profile.user_id] = {atcoder_username: profile.atcoder_username || 'Unknown', icon: profile.icon};
-          });
-          setUserNames(nameMap);
-          
-          // メモ作成者の名前を設定
-          if (memoResult.data?.user_id) {
-            setCreateUserName({atcoder_username: nameMap[memoResult.data.user_id].atcoder_username || 'Unknown', icon: nameMap[memoResult.data.user_id].icon});
-          }
-        }
-      }
-
       setLoading(false);
     }
 
-    loadMemoAndComments();
-
+    if (typeof window === 'undefined') return;
+    const savedState = sessionStorage.getItem(`global-memo-comment-${id}`);
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        setMemo(state.memo);
+        setComments(state.comments);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to restore state:', error);
+        sessionStorage.removeItem(`global-memo-comment-${id}`);
+        loadMemoAndComments();
+      }
+    }else{
+      loadMemoAndComments();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]); // Add id to dependencies
 
@@ -317,16 +280,29 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
               <div className="flex-shrink-0">
                 {memo.user_id && (
                     <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <span>by</span><span className="font-medium text-gray-700">{createUserName?.atcoder_username || 'Unknown'}</span>
-                      {createUserName?.icon && (
-                        <Image 
-                          src={createUserName?.icon} 
-                          alt={createUserName?.atcoder_username || 'User'}
-                          width={24}
-                          height={24}
-                          className="rounded-full object-cover"
-                        />
-                      )}
+                      {(() => {
+                        const profile = Array.isArray(memo.profiles) 
+                        ? memo.profiles[0] 
+                        : memo.profiles;
+                        const username = profile?.atcoder_username || 'Unknown';
+                        const icon = profile?.icon;
+                        console.log(profile);
+                        console.log(memo);
+                        return(
+                          <>
+                            <span>by</span><span className="font-medium text-gray-700">{username}</span>
+                            {icon && (
+                              <Image 
+                                src={icon} 
+                                alt={username}
+                                width={24}
+                                height={24}
+                                className="rounded-full object-cover"
+                              />
+                            )}
+                          </>
+                        )}
+                      )()}
                   </div>
                 )}
               </div>
@@ -436,7 +412,27 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                         <>
                           <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id].atcoder_username}</span>
+                              {(() => {
+                                const profile = Array.isArray(comment.profiles) 
+                                ? comment.profiles[0] 
+                                : comment.profiles;
+                                const username = profile?.atcoder_username || 'Unknown';
+                                const icon = profile?.icon;
+                                return(
+                                  <>
+                                    <span className="font-semibold text-gray-900 text-sm">{username}</span>
+                                    {icon && (
+                                      <Image 
+                                        src={icon}
+                                        alt={username}
+                                        width={24}
+                                        height={24}
+                                        className="rounded-full object-cover"
+                                      />
+                                    )}
+                                  </>
+                                )}
+                              )()}
                               <span className="text-sm text-gray-600">Editing...</span>
                             </div>
                             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
@@ -518,16 +514,27 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                         <>
                           <div className="bg-gray-100 border-b border-gray-300 px-4 py-2 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-gray-900 text-sm">{userNames[comment.user_id].atcoder_username}</span>
-                              {userNames[comment.user_id]?.icon && (
-                                <Image 
-                                  src={userNames[comment.user_id].icon || ''}
-                                  alt={userNames[comment.user_id].atcoder_username || 'User'}
-                                  width={24}
-                                  height={24}
-                                  className="rounded-full object-cover"
-                                />
-                              )}
+                              {(() => {
+                                const profile = Array.isArray(comment.profiles) 
+                                ? comment.profiles[0] 
+                                : comment.profiles;
+                                const username = profile?.atcoder_username || 'Unknown';
+                                const icon = profile?.icon;
+                                return(
+                                  <>
+                                    <span className="font-semibold text-gray-900 text-sm">{username}</span>
+                                    {icon && (
+                                      <Image 
+                                        src={icon}
+                                        alt={username}
+                                        width={24}
+                                        height={24}
+                                        className="rounded-full object-cover"
+                                      />
+                                    )}
+                                  </>
+                                )}
+                              )()}
                               {comment.created_at && (
                                 <span className="text-sm text-gray-600">
                                   {new Date(comment.created_at).toLocaleDateString('ja-JP', {

@@ -65,7 +65,7 @@ function GlobalMemosPage() {
         const state = JSON.parse(savedState);
         const currentTime = Date.now();
         const savedTime = state.timestamp || 0;
-        const oneMinute = 60 * 1000; // 1分（ミリ秒）
+        const oneMinute = 5 * 60 * 1000; // 5分（ミリ秒）
         
         // 1分以上経過していたらsessionStorageをクリアして再フェッチ
         if (currentTime - savedTime > oneMinute) {
@@ -94,6 +94,11 @@ function GlobalMemosPage() {
       } catch (error) {
         console.error('Failed to restore state:', error);
         isRestoringRef.current = false;
+        sessionStorage.removeItem('globalPageState');
+        setMemos([]);
+        setLastCreatedAt(null);
+        setHasMore(true);
+        loadMemos(null, true);
       }
     }else{
       setMemos([]);
