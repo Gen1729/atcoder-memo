@@ -108,6 +108,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         .eq('id', id)
         .single();
 
+      sessionStorage.removeItem('globalPageState');
+      sessionStorage.removeItem('individualPageState');
+
+      sessionStorage.removeItem(`global-memo-comment-${id}`);
       sessionStorage.removeItem(`individual-memo-${id}`);
 
       setLoading(false);
