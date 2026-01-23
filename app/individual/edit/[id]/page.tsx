@@ -235,6 +235,9 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
 
     sessionStorage.removeItem('globalPageState');
     sessionStorage.removeItem('individualPageState');
+
+    sessionStorage.removeItem(`global-memo-comment-${id}`);
+    sessionStorage.removeItem(`individual-memo-${id}`);
     
     // useRefを使用しているため、即座に遷移しても問題なし
     router.push(`/individual/display/${id}`);

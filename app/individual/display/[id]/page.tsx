@@ -70,11 +70,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         console.error('Error loading memo:', error);
       } else {
         setMemo(data);
+        sessionStorage.setItem(`individual-memo-${id}`, JSON.stringify({
+          data
+        }));
       }
+      
       setLoading(false);
     }
 
-    loadMemo();
+    if (typeof window === 'undefined') return;
+    const savedState = sessionStorage.getItem(`individual-memo-${id}`);
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        setMemo(state);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to restore state:', error);
+        sessionStorage.removeItem(`individual-memo-${id}`);
+        loadMemo();
+      }
+    }else{
+      loadMemo();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, session, id]);
 
@@ -89,6 +107,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         .delete()
         .eq('id', id)
         .single();
+
+      sessionStorage.removeItem(`individual-memo-${id}`);
 
       setLoading(false);
 
