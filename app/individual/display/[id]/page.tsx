@@ -96,34 +96,30 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, session, id]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!user || !session || !id) return;
 
-    async function deleteMemo() {
-      setLoading(true);
+    setLoading(true);
 
-      const { error } = await client
-        .from('memos')
-        .delete()
-        .eq('id', id)
-        .single();
+    const { error } = await client
+      .from('memos')
+      .delete()
+      .eq('id', id)
+      .single();
 
-      sessionStorage.removeItem('globalPageState');
-      sessionStorage.removeItem('individualPageState');
+    sessionStorage.removeItem('globalPageState');
+    sessionStorage.removeItem('individualPageState');
 
-      sessionStorage.removeItem(`global-memo-comment-${id}`);
-      sessionStorage.removeItem(`individual-memo-${id}`);
+    sessionStorage.removeItem(`global-memo-comment-${id}`);
+    sessionStorage.removeItem(`individual-memo-${id}`);
 
-      setLoading(false);
+    setLoading(false);
 
-      if (error) {
-        console.error('Error creating memo:', error);
-        alert(`Error: ${error.message}`);
-        return;
-      }
+    if (error) {
+      console.error('Error creating memo:', error);
+      alert(`Error: ${error.message}`);
+      return;
     }
-
-    deleteMemo();
 
     router.push('/individual')
   }
