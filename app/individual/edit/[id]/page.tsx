@@ -11,6 +11,7 @@ import remarkBreaks from 'remark-breaks';
 import 'github-markdown-css/github-markdown.css';
 
 import rehypeKatex from 'rehype-katex'
+import rehypeRaw from 'rehype-raw'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
@@ -379,7 +380,7 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                   <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[325px]">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} 
-                      rehypePlugins={[rehypeKatex]}
+                      rehypePlugins={[rehypeRaw, rehypeKatex]}
                       components={{
                         a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
                       }}

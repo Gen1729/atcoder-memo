@@ -11,6 +11,7 @@ import remarkBreaks from 'remark-breaks';
 import 'github-markdown-css/github-markdown.css';
 
 import rehypeKatex from 'rehype-katex'
+import rehypeRaw from 'rehype-raw'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
@@ -364,7 +365,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
               <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-white min-h-[490px]">
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} 
-                  rehypePlugins={[rehypeKatex]}
+                  rehypePlugins={[rehypeRaw, rehypeKatex]}
                   components={{
                     a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
                   }}
@@ -490,7 +491,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                                   <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px] mb-3">
                                     <ReactMarkdown
                                       remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                                      rehypePlugins={[rehypeKatex]}
+                                      rehypePlugins={[rehypeRaw, rehypeKatex]}
                                       components={{
                                         a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
                                       }}
@@ -597,7 +598,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                           <div className="markdown-body bg-white p-4">
                             <ReactMarkdown
                               remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                              rehypePlugins={[rehypeKatex]}
+                              rehypePlugins={[rehypeRaw, rehypeKatex]}
                               components={{
                                 a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
                               }}
@@ -656,7 +657,7 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                       <div className="markdown-body border border-gray-300 rounded-lg p-4 bg-gray-50 min-h-[150px]">
                         <ReactMarkdown 
                           remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
-                          rehypePlugins={[rehypeKatex]}
+                          rehypePlugins={[rehypeRaw, rehypeKatex]}
                         >
                           {newComment || "*Nothing to preview*"}
                         </ReactMarkdown>
