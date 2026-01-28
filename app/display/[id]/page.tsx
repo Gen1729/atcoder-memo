@@ -15,6 +15,8 @@ import rehypeRaw from 'rehype-raw'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
+import { UserProfileModal } from '../../components/UserProfileModal'
+
 interface Profile {
   atcoder_username: string;
   icon?: string;
@@ -58,6 +60,9 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>('');
   const [isEditPreview, setIsEditPreview] = useState<boolean>(false);
+
+  // モーダル用のstate
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -321,7 +326,11 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                                 alt={username}
                                 width={24}
                                 height={24}
-                                className="rounded-full object-cover"
+                                className="rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedUserId(memo.user_id)
+                                }}
                               />
                             )}
                           </>
@@ -451,7 +460,11 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                                         alt={username}
                                         width={24}
                                         height={24}
-                                        className="rounded-full object-cover"
+                                        className="rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedUserId(comment.user_id)
+                                        }}
                                       />
                                     )}
                                   </>
@@ -553,7 +566,11 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                                         alt={username}
                                         width={24}
                                         height={24}
-                                        className="rounded-full object-cover"
+                                        className="rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          setSelectedUserId(comment.user_id)
+                                        }}
                                       />
                                     )}
                                   </>
@@ -689,6 +706,13 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
           </div>
         </div>
       </div>
+      {/* ユーザープロファイルモーダル */}
+      {selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -2,7 +2,8 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image';
+import Image from 'next/image'
+import { UserProfileModal } from './components/UserProfileModal'
 
 interface Profile {
   atcoder_username: string;
@@ -29,6 +30,9 @@ function GlobalMemosPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [category,setCategory] = useState<string>("all");
   // const [memoType, setMemoType] = useState<"memo" | "question">("memo");
+  
+  // モーダル用のstate
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   
   // 検索クエリをURLパラメータから取得
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '');
@@ -496,7 +500,11 @@ function GlobalMemosPage() {
                               alt={username || 'User'}
                               width={24}
                               height={24}
-                              className="rounded-full object-cover"
+                              className="rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedUserId(memo.user_id)
+                              }}
                             />
                           )}
                         </div>
@@ -552,6 +560,14 @@ function GlobalMemosPage() {
           )}
         </div>
       </main>
+
+      {/* ユーザープロファイルモーダル */}
+      {selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+        />
+      )}
     </div>
   )
 }
