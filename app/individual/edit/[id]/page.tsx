@@ -15,6 +15,8 @@ import rehypeRaw from 'rehype-raw'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
+import { CodeBlock } from '../../../components/CodeBlock'
+
 interface Memo {
   title: string;
   subtitle?: string;
@@ -382,7 +384,13 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                       remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} 
                       rehypePlugins={[rehypeRaw, rehypeKatex]}
                       components={{
-                        a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                        a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                        code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
+                          if (inline) {
+                            return <code className={className} {...props}>{children}</code>
+                          }
+                          return <CodeBlock className={className}>{String(children).replace(/\n$/, '')}</CodeBlock>
+                        }
                       }}
                     >
                       {content || "*Nothing to preview*"}

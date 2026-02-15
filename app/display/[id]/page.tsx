@@ -16,6 +16,7 @@ import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
 import { UserProfileModal } from '../../components/UserProfileModal'
+import { CodeBlock } from '../../components/CodeBlock'
 
 interface Profile {
   atcoder_username: string;
@@ -376,7 +377,13 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                   remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]} 
                   rehypePlugins={[rehypeRaw, rehypeKatex]}
                   components={{
-                    a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                    a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                    code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
+                      if (inline) {
+                        return <code className={className} {...props}>{children}</code>
+                      }
+                      return <CodeBlock className={className}>{String(children).replace(/\n$/, '')}</CodeBlock>
+                    }
                   }}
                 >
                   {memo.content || "*Nothing to preview*"}
@@ -506,7 +513,13 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                                       remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
                                       rehypePlugins={[rehypeRaw, rehypeKatex]}
                                       components={{
-                                        a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                                        a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                                        code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
+                                          if (inline) {
+                                            return <code className={className} {...props}>{children}</code>
+                                          }
+                                          return <CodeBlock className={className}>{String(children).replace(/\n$/, '')}</CodeBlock>
+                                        }
                                       }}
                                     >
                                       {editContent || "*Nothing to preview*"}
@@ -617,7 +630,13 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                               remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
                               rehypePlugins={[rehypeRaw, rehypeKatex]}
                               components={{
-                                a: ({node, ...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />
+                                a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                                code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
+                                  if (inline) {
+                                    return <code className={className} {...props}>{children}</code>
+                                  }
+                                  return <CodeBlock className={className}>{String(children).replace(/\n$/, '')}</CodeBlock>
+                                }
                               }}
                             >
                               {comment.content}
@@ -675,6 +694,15 @@ function DisplayPage({ params }: { params: Promise<{ id: string }> }) {
                         <ReactMarkdown 
                           remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
                           rehypePlugins={[rehypeRaw, rehypeKatex]}
+                          components={{
+                            a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                            code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
+                              if (inline) {
+                                return <code className={className} {...props}>{children}</code>
+                              }
+                              return <CodeBlock className={className}>{String(children).replace(/\n$/, '')}</CodeBlock>
+                            }
+                          }}
                         >
                           {newComment || "*Nothing to preview*"}
                         </ReactMarkdown>
