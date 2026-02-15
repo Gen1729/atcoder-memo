@@ -54,7 +54,7 @@ function IndividualPage() {
         isRestoringRef.current = true; // 復元開始
         const state = JSON.parse(savedState);
         setMemos(state.memos || []);
-        setTotalMemoCount(state.totalCount || 0);
+        setTotalMemoCount(state.totalMemoCount || 0);
         setLastCreatedAt(state.lastCreatedAt || null);
         setCategory(state.category || 'all');
         setIsFavorite(state.isFavorite || false);
