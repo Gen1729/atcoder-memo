@@ -385,6 +385,13 @@ export default function Edit({ params }: { params: Promise<{ id: string }> }){
                       rehypePlugins={[rehypeRaw, rehypeKatex]}
                       components={{
                         a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                        pre: ({children, ...props}) => {
+                          return (
+                            <pre className="group relative" {...props}>
+                              {children}
+                            </pre>
+                          )
+                        },
                         code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
                           if (inline) {
                             return <code className={className} {...props}>{children}</code>

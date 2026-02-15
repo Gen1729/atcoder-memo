@@ -323,6 +323,13 @@ export default function Create(){
                       rehypePlugins={[rehypeRaw, rehypeKatex]}
                       components={{
                         a: ({...props}) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+                        pre: ({children, ...props}) => {
+                          return (
+                            <pre className="group relative" {...props}>
+                              {children}
+                            </pre>
+                          )
+                        },
                         code: ({inline, className, children, ...props}: {inline?: boolean, className?: string, children?: React.ReactNode}) => {
                           if (inline) {
                             return <code className={className} {...props}>{children}</code>
