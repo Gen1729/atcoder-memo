@@ -53,6 +53,21 @@ function IndividualPage() {
       try {
         isRestoringRef.current = true; // 復元開始
         const state = JSON.parse(savedState);
+
+        const currentTime = Date.now();
+        const savedTime = state.timestamp || 0;
+        const waitTime = 5 * 60 * 1000; // 5分（ミリ秒）
+        
+        // 5分以上経過していたらsessionStorageをクリアして再フェッチ
+        if (currentTime - savedTime > waitTime) {
+          sessionStorage.removeItem('individualPageState');
+          setMemos([]);
+          setLastCreatedAt(null);
+          setHasMore(true);
+          loadMemos(null, true);
+          return;
+        }
+
         setMemos(state.memos || []);
         setTotalMemoCount(state.totalMemoCount || 0);
         setLastCreatedAt(state.lastCreatedAt || null);
