@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Atcoder Memo',
-  description: 'Manage your AtCoder problem-solving notes and resolve your questions',
+  description: 'Manage your AtCoder problem-solving notes',
   icons: {icon: "/favicon.png"}
 }
 
